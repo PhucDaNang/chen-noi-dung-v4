@@ -1,0 +1,7 @@
+# Bỏ qua các file khác trong thư mục làm việc chung
+*
+
+# Chỉ theo dõi các file của dự án ChennoidungV4
+!.gitignore
+!README.md
+!ChennoidungV4.html
