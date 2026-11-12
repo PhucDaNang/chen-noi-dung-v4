@@ -1,7 +1,27 @@
 # Bỏ qua các file khác trong thư mục làm việc chung
 *
 
-# Chỉ theo dõi các file của dự án ChennoidungV4
+# Whitelist các file của dự án ChennoidungV4
 !.gitignore
 !README.md
 !ChennoidungV4.html
+!DoKichThuocCamera.html
+!KiemTraKetCau.html
+
+# PHUC XLL MANAGER & AI CONTEXT
+!AGENTS.md
+!PROJECT_CONTEXT.md
+!ARCHITECTURE.md
+!MODULE_REGISTRY.md
+!CHANGELOG.md
+
+!PhucXllManager/
+!PhucXllManager/**
+!PhucXllManager.Tests/
+!PhucXllManager.Tests/**
+
+# Bỏ qua build artifacts C#
+PhucXllManager/bin/
+PhucXllManager/obj/
+PhucXllManager.Tests/bin/
+PhucXllManager.Tests/obj/

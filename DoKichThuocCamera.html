@@ -1,0 +1,2250 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#090d16" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>SmartCam Measure Pro — Đo Kích Thước Bằng Camera Điện Thoại</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --bg-panel: #111827;
+      --bg-glass: rgba(15, 23, 42, 0.82);
+      --bg-glass-heavy: rgba(9, 13, 22, 0.92);
+      --border: rgba(255, 255, 255, 0.12);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --primary: #6366f1;
+      --primary-glow: rgba(99, 102, 241, 0.35);
+      --accent: #00e5b0;
+      --accent-glow: rgba(0, 229, 176, 0.3);
+      --amber: #f59e0b;
+      --danger: #f43f5e;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --radius-sm: 10px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: #04070d;
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Khung giao diện đứng điện thoại (Mobile Portrait Frame) */
+    #phoneFrame {
+      position: relative;
+      width: 100vw;
+      height: 100dvh;
+      max-width: 440px;
+      max-height: 932px;
+      background: var(--bg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    }
+
+    @media (min-width: 500px) {
+      body {
+        background:
+          radial-gradient(circle at 15% 20%, rgba(99, 102, 241, 0.18), transparent 45%),
+          radial-gradient(circle at 85% 80%, rgba(0, 229, 176, 0.14), transparent 45%),
+          #04070d;
+        padding: 12px;
+      }
+      #phoneFrame {
+        height: min(94dvh, 900px);
+        border-radius: 38px;
+        border: 6px solid #1e293b;
+      }
+      #phoneFrame.fullscreen-desktop {
+        max-width: 100vw;
+        max-height: 100dvh;
+        height: 100dvh;
+        border-radius: 0;
+        border: none;
+      }
+    }
+
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: inherit;
+    }
+
+    input {
+      font-family: inherit;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
+    /* ====== HEADER ĐỨNG ĐIỆN THOẠI ====== */
+    .app-header {
+      position: relative;
+      z-index: 20;
+      padding: calc(env(safe-area-inset-top, 0px) + 10px) 14px 10px;
+      background: var(--bg-glass-heavy);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      backdrop-filter: blur(12px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+    }
+
+    .brand-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 4px 12px var(--primary-glow);
+      flex-shrink: 0;
+    }
+
+    .brand-text h1 {
+      font-size: 14.5px;
+      font-weight: 800;
+      letter-spacing: -0.2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .brand-text p {
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .icon-chip {
+      padding: 6px 10px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+    .icon-chip:active {
+      transform: scale(0.95);
+    }
+    .icon-chip.active {
+      background: rgba(0, 229, 176, 0.18);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ====== THANH CHỌN 3 CHẾ ĐỘ ĐO (MODE TABS) ====== */
+    .mode-tabs {
+      position: relative;
+      z-index: 20;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      padding: 8px 12px;
+      background: #0b101d;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .mode-tab {
+      padding: 8px 6px;
+      border-radius: 11px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid transparent;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--muted);
+      transition: all 0.18s ease;
+    }
+
+    .mode-tab .tab-ico {
+      font-size: 15px;
+    }
+
+    .mode-tab.active {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(0, 229, 176, 0.15));
+      border-color: rgba(0, 229, 176, 0.5);
+      color: var(--text);
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+    }
+
+    /* ====== VÙNG VIEWPORT CAMERA TRUNG TÂM ====== */
+    .viewport {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      background: #020409;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #cameraVideo, #photoCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    #photoCanvas.contain-mode {
+      object-fit: contain;
+      background: #050811;
+    }
+
+    #drawCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+      z-index: 6;
+    }
+
+    /* ====== HUD HIỂN THỊ KẾT QUẢ NỔI TRÊN CAMERA ====== */
+    .hud-top {
+      position: absolute;
+      top: 10px;
+      left: 12px;
+      right: 12px;
+      z-index: 12;
+      display: flex;
+      align-items: stretch;
+      justify-content: space-between;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .readout-card {
+      pointer-events: auto;
+      flex: 1;
+      background: var(--bg-glass-heavy);
+      border: 1px solid rgba(0, 229, 176, 0.35);
+      border-radius: 15px;
+      padding: 8px 12px;
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+    }
+
+    .readout-main {
+      min-width: 0;
+    }
+
+    .readout-value {
+      font-size: 23px;
+      font-weight: 800;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.5px;
+      line-height: 1.15;
+    }
+
+    .readout-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .unit-pills {
+      display: flex;
+      background: rgba(255, 255, 255, 0.07);
+      padding: 3px;
+      border-radius: 10px;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .unit-pills button {
+      padding: 4px 7px;
+      border-radius: 7px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .unit-pills button.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    /* ====== THANH CÔNG CỤ ĐO (DÀI / DIỆN TÍCH / GÓC) ====== */
+    .subtool-bar {
+      position: absolute;
+      top: 74px;
+      left: 12px;
+      right: 12px;
+      z-index: 12;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      pointer-events: none;
+    }
+
+    .tool-group {
+      pointer-events: auto;
+      display: flex;
+      gap: 4px;
+      background: var(--bg-glass);
+      border: 1px solid var(--border);
+      padding: 4px;
+      border-radius: 12px;
+      backdrop-filter: blur(8px);
+    }
+
+    .tool-btn {
+      padding: 5px 9px;
+      border-radius: 8px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .tool-btn.active {
+      background: var(--accent);
+      color: #04241c;
+    }
+
+    .cal-badge {
+      pointer-events: auto;
+      padding: 6px 10px;
+      border-radius: 11px;
+      background: rgba(99, 102, 241, 0.22);
+      border: 1px solid rgba(99, 102, 241, 0.5);
+      color: #c7d2fe;
+      font-size: 11px;
+      font-weight: 700;
+      backdrop-filter: blur(8px);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* ====== HƯỚNG DẪN NHANH TRÊN MÀN HÌNH (COACH BANNER) ====== */
+    .coach-toast {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      right: 12px;
+      z-index: 11;
+      background: rgba(9, 13, 22, 0.86);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 14px;
+      padding: 9px 12px;
+      font-size: 12px;
+      line-height: 1.4;
+      color: #e2e8f0;
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      transition: opacity 0.2s ease;
+    }
+    .coach-toast.faded {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .coach-toast b {
+      color: var(--accent);
+    }
+
+    /* ====== BẢNG ĐIỀU KHIỂN ĐO GÓC NGHIÊNG (TRIG TELEMETER OVERLAY) ====== */
+    #trigOverlay {
+      position: absolute;
+      inset: 0;
+      z-index: 9;
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+    #trigOverlay.active {
+      display: flex;
+    }
+    .crosshair-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 68px;
+      height: 68px;
+      border: 2px solid var(--accent);
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.5), inset 0 0 12px var(--accent-glow);
+    }
+    .crosshair-center::before,
+    .crosshair-center::after {
+      content: "";
+      position: absolute;
+      background: var(--accent);
+    }
+    .crosshair-center::before {
+      top: 50%;
+      left: -14px;
+      right: -14px;
+      height: 1.5px;
+      transform: translateY(-50%);
+    }
+    .crosshair-center::after {
+      left: 50%;
+      top: -14px;
+      bottom: -14px;
+      width: 1.5px;
+      transform: translateX(-50%);
+    }
+
+    .trig-panel {
+      pointer-events: auto;
+      margin: auto 12px 12px;
+      background: var(--bg-glass-heavy);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 12px;
+      backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .trig-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12.5px;
+    }
+
+    .trig-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .trig-box {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 7px 8px;
+      text-align: center;
+    }
+
+    .trig-box small {
+      display: block;
+      font-size: 10.5px;
+      color: var(--muted);
+    }
+
+    .trig-box strong {
+      font-size: 14px;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ====== BẢNG ĐIỀU KHIỂN ĐÁY MÀN HÌNH ĐỨNG (BOTTOM CONTROLS) ====== */
+    .bottom-dock {
+      position: relative;
+      z-index: 20;
+      background: var(--bg-glass-heavy);
+      border-top: 1px solid var(--border);
+      padding: 10px 12px calc(env(safe-area-inset-bottom, 0px) + 12px);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .btn-act {
+      padding: 10px 6px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      transition: all 0.15s ease;
+    }
+    .btn-act span.ico {
+      font-size: 16px;
+    }
+    .btn-act:active {
+      transform: scale(0.96);
+    }
+    .btn-act.primary {
+      background: linear-gradient(135deg, var(--primary), #4f46e5);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      box-shadow: 0 4px 12px var(--primary-glow);
+    }
+    .btn-act.accent {
+      background: linear-gradient(135deg, #00b890, var(--accent));
+      color: #03221a;
+      border-color: transparent;
+      box-shadow: 0 4px 12px var(--accent-glow);
+    }
+    .btn-act.danger {
+      background: rgba(244, 63, 94, 0.16);
+      border-color: rgba(244, 63, 94, 0.35);
+      color: #fda4af;
+    }
+
+    .secondary-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .btn-pill {
+      flex: 1;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      font-size: 11.5px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      color: #cbd5e1;
+    }
+    .btn-pill:active {
+      transform: scale(0.97);
+    }
+
+    /* ====== SHEET CHỌN VẬT CHUẨN & LỊCH SỬ ĐO & NGUỒN GITHUB ====== */
+    .bottom-sheet {
+      position: absolute;
+      inset: 0;
+      z-index: 40;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .bottom-sheet.open {
+      display: flex;
+    }
+
+    .sheet-box {
+      width: 100%;
+      max-height: 82%;
+      background: #111827;
+      border-top: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 24px 24px 0 0;
+      padding: 16px 16px calc(env(safe-area-inset-bottom, 0px) + 18px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow-y: auto;
+    }
+
+    .sheet-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2px;
+    }
+
+    .sheet-head h3 {
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .ref-list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .ref-item {
+      padding: 11px 13px;
+      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-align: left;
+      font-size: 13.5px;
+      font-weight: 700;
+    }
+    .ref-item.selected {
+      border-color: var(--accent);
+      background: rgba(0, 229, 176, 0.12);
+    }
+    .ref-item small {
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 12.5px;
+    }
+
+    .custom-ref-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .custom-ref-row input {
+      flex: 1;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+    }
+    .custom-ref-row input:focus {
+      border-color: var(--accent);
+    }
+
+    /* Danh sách kết quả đo */
+    .history-item {
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+    }
+    .history-item strong {
+      color: var(--accent);
+      font-size: 15px;
+    }
+
+    .github-card {
+      padding: 11px 12px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      font-size: 12.5px;
+      line-height: 1.45;
+    }
+    .github-card a {
+      color: var(--accent);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    /* Thông báo nổi (Toast) */
+    #toastMsg {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 60;
+      background: rgba(9, 13, 22, 0.94);
+      border: 1px solid var(--accent);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 99px;
+      font-size: 13px;
+      font-weight: 700;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      white-space: nowrap;
+    }
+    #toastMsg.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+<div id="phoneFrame">
+  <!-- ====== HEADER ====== -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-icon">📏</div>
+      <div class="brand-text">
+        <h1>SmartCam Measure Pro</h1>
+        <p>Đo kích thước & diện tích bằng Camera</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="icon-chip" id="btnOpenHistory" title="Danh sách kết quả đo">📋 <span id="badgeCount">0</span></button>
+      <button class="icon-chip" id="btnOpenGithub" title="Mã nguồn GitHub">🐙 GitHub</button>
+      <button class="icon-chip" id="btnToggleFrame" title="Toàn màn hình">⛶</button>
+    </div>
+  </header>
+
+  <!-- ====== 3 CHẾ ĐỘ ĐO (TABS) ====== -->
+  <nav class="mode-tabs">
+    <button class="mode-tab active" data-mode="ruler" id="tabRuler">
+      <span class="tab-ico">📸</span>
+      <span>Thước Camera</span>
+    </button>
+    <button class="mode-tab" data-mode="trig" id="tabTrig">
+      <span class="tab-ico">📐</span>
+      <span>Đo Xa & Cao</span>
+    </button>
+    <button class="mode-tab" data-mode="ar" id="tabAR">
+      <span class="tab-ico">🌐</span>
+      <span>AR 3D (WebXR)</span>
+    </button>
+  </nav>
+
+  <!-- ====== VIEWPORT CAMERA & CANVAS ====== -->
+  <main class="viewport" id="viewportArea">
+    <video id="cameraVideo" autoplay playsinline muted></video>
+    <canvas id="photoCanvas" style="display:none;"></canvas>
+    <canvas id="drawCanvas"></canvas>
+
+    <!-- HUD KẾT QUẢ & ĐƠN VỊ -->
+    <div class="hud-top">
+      <div class="readout-card">
+        <div class="readout-main">
+          <div class="readout-value" id="mainReadout">—</div>
+          <div class="readout-sub" id="subReadout">Chọn Vật chuẩn hoặc chạm 2 điểm để đo</div>
+        </div>
+        <div class="unit-pills" id="unitBar">
+          <button data-unit="mm">mm</button>
+          <button data-unit="cm" class="active">cm</button>
+          <button data-unit="m">m</button>
+          <button data-unit="in">in</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- THANH CÔNG CỤ PHỤ (CHẾ ĐỘ THƯỚC CAMERA) -->
+    <div class="subtool-bar" id="rulerToolbar">
+      <div class="tool-group">
+        <button class="tool-btn active" data-tool="length" id="toolLength">📏 Dài/Rộng</button>
+        <button class="tool-btn" data-tool="area" id="toolArea">⬛ Diện tích</button>
+        <button class="tool-btn" data-tool="angle" id="toolAngle">🧭 Đo góc</button>
+      </div>
+      <button class="cal-badge" id="btnOpenRef">
+        🎯 <span id="calStatusText">Chuẩn: Thẻ 85.6mm</span>
+      </button>
+    </div>
+
+    <!-- LỚP ĐO KHOẢNG CÁCH & CHIỀU CAO BẰNG GÓC NGHIÊNG (TRIG TELEMETER) -->
+    <div id="trigOverlay">
+      <div class="crosshair-center"></div>
+      <div class="trig-panel">
+        <div class="trig-row">
+          <span>📱 Chiều cao cầm máy ($H_{cam}$):</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <input type="number" id="inpCamHeight" value="150" min="20" max="300" step="1"
+              style="width:68px;padding:5px 8px;border-radius:8px;background:#1e293b;border:1px solid var(--border);color:#fff;font-weight:700;text-align:center;" />
+            <span style="font-weight:700;color:var(--accent);">cm</span>
+          </div>
+        </div>
+
+        <div class="trig-row">
+          <span>🧭 Góc nghiêng (<span id="sensorSourceLbl">Thủ công/Cảm biến</span>): <b id="lblTiltDeg" style="color:var(--accent);">45.0°</b></span>
+          <input type="range" id="sliderTilt" min="5" max="135" step="0.5" value="55" style="width:125px;accent-color:var(--accent);" />
+        </div>
+
+        <div class="trig-metrics">
+          <div class="trig-box">
+            <small>Khoảng cách ngang</small>
+            <strong id="trigDistVal">2.14 m</strong>
+          </div>
+          <div class="trig-box">
+            <small>Chiều cao vật</small>
+            <strong id="trigHeightVal">—</strong>
+          </div>
+          <div class="trig-box">
+            <small>Đường chéo mắt</small>
+            <strong id="trigSlantVal">2.61 m</strong>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button class="btn-act accent" id="btnLockBase" style="padding:9px;">🎯 1. Khóa Chân Vật</button>
+          <button class="btn-act primary" id="btnLockTop" style="padding:9px;">🌲 2. Khóa Đỉnh Vật</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HƯỚNG DẪN NHANH -->
+    <div class="coach-toast" id="coachBox">
+      <span id="coachText">💡 <b>Bước 1:</b> Chạm & kéo 2 đầu <b>Vật chuẩn</b> (màu tím) để hiệu chuẩn tỉ lệ thực tế, sau đó chạm 2 điểm bất kỳ để đo!</span>
+      <button id="btnHideCoach" style="color:var(--muted);font-weight:800;padding:2px 6px;">✕</button>
+    </div>
+  </main>
+
+  <!-- ====== BẢNG ĐIỀU KHIỂN ĐÁY (BOTTOM DOCK) ====== -->
+  <footer class="bottom-dock">
+    <div class="action-grid">
+      <button class="btn-act accent" id="btnSnapToggle">
+        <span class="ico" id="snapIco">📸</span>
+        <span id="snapLbl">Chụp ảnh</span>
+      </button>
+      <button class="btn-act primary" id="btnCalibrateMode">
+        <span class="ico">🎯</span>
+        <span id="calBtnLbl">Đặt chuẩn</span>
+      </button>
+      <button class="btn-act" id="btnUndo">
+        <span class="ico">↩️</span>
+        <span>Hoàn tác</span>
+      </button>
+      <button class="btn-act danger" id="btnClear">
+        <span class="ico">🗑️</span>
+        <span>Xóa đo</span>
+      </button>
+    </div>
+
+    <div class="secondary-row">
+      <button class="btn-pill" id="btnDemoScene">🖼️ Ảnh Mẫu Thử</button>
+      <label class="btn-pill" for="fileUploadImg" style="cursor:pointer;">
+        📂 Tải Ảnh
+        <input type="file" id="fileUploadImg" accept="image/*" style="display:none;" />
+      </label>
+      <button class="btn-pill" id="btnFlipCam">🔄 Đổi Cam</button>
+      <button class="btn-pill" id="btnExportImg" style="color:var(--accent);border-color:rgba(0,229,176,0.35);">💾 Lưu Ảnh Đo</button>
+    </div>
+  </footer>
+
+  <!-- ====== SHEET 1: CHỌN VẬT CHUẨN THAM CHIẾU ====== -->
+  <div class="bottom-sheet" id="sheetRef">
+    <div class="sheet-box">
+      <div class="sheet-head">
+        <h3>🎯 Chọn Vật Chuẩn Tham Chiếu</h3>
+        <button class="icon-chip" id="btnCloseRef">Đóng ✕</button>
+      </div>
+      <p style="font-size:12px;color:var(--muted);line-height:1.45;">
+        Đặt một vật có kích thước biết trước nằm cùng mặt phẳng với vật cần đo, sau đó kéo 2 điểm chuẩn màu tím trùng với 2 mép của vật chuẩn.
+      </p>
+      <div class="ref-list" id="refListContainer">
+        <button class="ref-item selected" data-mm="85.6" data-name="Thẻ ATM/CCCD (Dài)">
+          <span>💳 Thẻ Ngân Hàng / CCCD — Cạnh dài</span>
+          <small>85.6 mm</small>
+        </button>
+        <button class="ref-item" data-mm="53.98" data-name="Thẻ ATM/CCCD (Ngắn)">
+          <span>💳 Thẻ Ngân Hàng / CCCD — Cạnh ngắn</span>
+          <small>53.98 mm</small>
+        </button>
+        <button class="ref-item" data-mm="152" data-name="Tiền 500k/200k (Dài)">
+          <span>💵 Tờ tiền 500.000đ / 200.000đ — Dài</span>
+          <small>152.0 mm</small>
+        </button>
+        <button class="ref-item" data-mm="297" data-name="Giấy A4 (Dài)">
+          <span>📄 Khổ giấy A4 — Cạnh dài</span>
+          <small>297.0 mm</small>
+        </button>
+        <button class="ref-item" data-mm="210" data-name="Giấy A4 (Ngắn)">
+          <span>📄 Khổ giấy A4 — Cạnh ngắn</span>
+          <small>210.0 mm</small>
+        </button>
+        <button class="ref-item" data-mm="600" data-name="Gạch lát 60x60">
+          <span>🧱 Viên gạch lát nền 60×60 cm</span>
+          <small>600.0 mm</small>
+        </button>
+      </div>
+      <div class="custom-ref-row">
+        <input type="number" id="inpCustomMM" placeholder="Nhập kích thước chuẩn (mm), VD: 100" inputmode="decimal" />
+        <button class="btn-act accent" id="btnApplyCustomMM" style="padding:0 16px;">Áp dụng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== SHEET 2: DANH SÁCH LỊCH SỬ KẾT QUẢ ĐO ====== -->
+  <div class="bottom-sheet" id="sheetHistory">
+    <div class="sheet-box">
+      <div class="sheet-head">
+        <h3>📋 Bảng Kết Quả Kích Thước Đã Đo</h3>
+        <button class="icon-chip" id="btnCloseHistory">Đóng ✕</button>
+      </div>
+      <div id="historyList" style="display:flex;flex-direction:column;gap:7px;max-height:320px;overflow-y:auto;"></div>
+      <div style="display:flex;gap:8px;margin-top:6px;">
+        <button class="btn-act primary" id="btnCopyReport" style="flex:1;padding:11px;">📋 Copy Báo Cáo Số Liệu</button>
+        <button class="btn-act accent" id="btnDownloadSnapshot2" style="flex:1;padding:11px;">💾 Xuất Ảnh Báo Cáo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== SHEET 3: MÃ NGUỒN GITHUB THAM KHẢO ====== -->
+  <div class="bottom-sheet" id="sheetGithub">
+    <div class="sheet-box">
+      <div class="sheet-head">
+        <h3>🐙 Mã Nguồn Mở GitHub Đã Tích Hợp</h3>
+        <button class="icon-chip" id="btnCloseGithub">Đóng ✕</button>
+      </div>
+      <div class="github-card">
+        <b>1. MagicTape (WebXR AR Tape + Photo Reference Ruler)</b><br />
+        Kho nguồn: <a href="https://github.com/maherkhan-builds/magic-tape-by-maher-khan" target="_blank" rel="noopener">github.com/maherkhan-builds/magic-tape-by-maher-khan</a><br />
+        <span style="color:var(--muted);">Cung cấp thuật toán kính lúp phóng đại 3.5x (Loupe Magnifier), hiệu chuẩn tỉ lệ pixel/mm theo thẻ từ/A4 và WebXR Hit-Test.</span>
+      </div>
+      <div class="github-card">
+        <b>2. WebXR-Measure (Three.js Spatial Hit-Test AR Ruler)</b><br />
+        Kho nguồn: <a href="https://github.com/woll-an/WebXR-Measure" target="_blank" rel="noopener">github.com/woll-an/WebXR-Measure</a><br />
+        <span style="color:var(--muted);">Cung cấp thuật toán nội suy ma trận 3D (`reticle.matrix`), vẽ đường thẳng 3D thời gian thực và chiếu tọa độ nhãn lên màn hình.</span>
+      </div>
+      <div class="github-card">
+        <b>3. Measuring Size of Objects with Reference (OpenCV/CV Ratio)</b><br />
+        Kho nguồn: <a href="https://github.com/Practical-CV/Measuring-Size-of-Objects-with-OpenCV" target="_blank" rel="noopener">github.com/Practical-CV/Measuring-Size-of-Objects-with-OpenCV</a><br />
+        <span style="color:var(--muted);">Cung cấp mô hình toán học `Pixels-Per-Metric` để đo đa đoạn thẳng, diện tích đa giác và góc nghiêng.</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastMsg">Đã lưu!</div>
+</div>
+
+<script>
+(() => {
+  function ensureThreeJS() {
+    if (window.THREE) return Promise.resolve(window.THREE);
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+      s.onload = () => resolve(window.THREE);
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+  /* ==============================================================
+     1. QUẢN LÝ TRẠNG THÁI & ĐƠN VỊ ĐO
+     ============================================================== */
+  let currentUnit = localStorage.getItem('scm_unit') || 'cm';
+  let currentMode = 'ruler';   // 'ruler' | 'trig' | 'ar'
+  let currentTool = 'length';  // 'length' | 'area' | 'angle'
+  let isCalibrating = false;   // Đang kéo chỉnh thanh chuẩn hay đang đo
+
+  let refMM = 85.6;
+  let refName = 'Thẻ ATM/CCCD (Dài)';
+  // Hai điểm đầu mút thanh chuẩn (tọa độ chuẩn hóa 0..1 theo drawCanvas)
+  let calLine = {
+    a: { u: 0.22, v: 0.72 },
+    b: { u: 0.78, v: 0.72 }
+  };
+
+  // Danh sách các kết quả đo trên màn hình
+  // Kiểu phần tử: { id, type: 'length'|'area'|'angle', pts: [{u,v}, ...], valueMM, areaMM2, angleDeg, label }
+  let measurements = [];
+  let pendingPts = [];         // Các điểm đang chấm dở
+  let draggingHandle = null;   // { target: 'calA'|'calB'|'pending'|'meas', index, measIdx, u, v }
+  let activePointerPos = null; // { x, y } bằng pixel thực trên drawCanvas để vẽ kính lúp
+
+  // Trạng thái Camera / Ảnh tĩnh
+  const video = document.getElementById('cameraVideo');
+  const photoCanvas = document.getElementById('photoCanvas');
+  const drawCanvas = document.getElementById('drawCanvas');
+  const dctx = drawCanvas.getContext('2d');
+
+  let mediaStream = null;
+  let facingMode = 'environment';
+  let isFrozenPhoto = false;
+  let isDemoScene = false;
+
+  /* ==============================================================
+     2. HÀM ĐỊNH DẠNG ĐƠN VỊ
+     ============================================================== */
+  function formatLength(mm) {
+    if (!Number.isFinite(mm)) return '—';
+    switch (currentUnit) {
+      case 'mm': return `${mm.toFixed(1)} mm`;
+      case 'cm': return `${(mm / 10).toFixed(2)} cm`;
+      case 'm':  return `${(mm / 1000).toFixed(3)} m`;
+      case 'in': return `${(mm / 25.4).toFixed(2)} in`;
+      default:   return `${(mm / 10).toFixed(2)} cm`;
+    }
+  }
+
+  function formatArea(mm2) {
+    if (!Number.isFinite(mm2)) return '—';
+    switch (currentUnit) {
+      case 'mm': return `${mm2.toFixed(0)} mm²`;
+      case 'cm': return `${(mm2 / 100).toFixed(2)} cm²`;
+      case 'm':  return `${(mm2 / 1e6).toFixed(4)} m²`;
+      case 'in': return `${(mm2 / 645.16).toFixed(2)} in²`;
+      default:   return `${(mm2 / 100).toFixed(2)} cm²`;
+    }
+  }
+
+  function showToast(msg) {
+    const el = document.getElementById('toastMsg');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => el.classList.remove('show'), 2200);
+  }
+
+  /* ==============================================================
+     3. KHỞI TẠO CAMERA HOẶC Bối CẢNH MẪU (DEMO SCENE)
+     ============================================================== */
+  async function startLiveCamera() {
+    stopLiveCamera();
+    try {
+      mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: facingMode },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        },
+        audio: false
+      });
+      video.srcObject = mediaStream;
+      video.style.display = 'block';
+      photoCanvas.style.display = 'none';
+      isFrozenPhoto = false;
+      isDemoScene = false;
+      updateSnapButtonUI();
+      await video.play();
+      resizeCanvases();
+    } catch (err) {
+      // Nếu thiết bị không có camera hoặc chưa cấp quyền, tự động bật Bàn Đo Mẫu trực quan
+      renderDemoBlueprintScene();
+      showToast('⚡ Đã bật Bàn Đo Mẫu (Bấm Chụp/Tải ảnh hoặc cấp quyền Camera)');
+    }
+  }
+
+  function stopLiveCamera() {
+    if (mediaStream) {
+      mediaStream.getTracks().forEach(t => t.stop());
+      mediaStream = null;
+    }
+  }
+
+  function updateSnapButtonUI() {
+    const ico = document.getElementById('snapIco');
+    const lbl = document.getElementById('snapLbl');
+    if (isFrozenPhoto) {
+      ico.textContent = '🎥';
+      lbl.textContent = 'Mở Camera';
+    } else {
+      ico.textContent = '📸';
+      lbl.textContent = 'Chụp ảnh';
+    }
+  }
+
+  // Vẽ mặt bàn kỹ thuật mẫu có sẵn Thẻ ATM chuẩn (85.6 x 53.98 mm) và Mẫu vật cần đo
+  function renderDemoBlueprintScene() {
+    stopLiveCamera();
+    isFrozenPhoto = true;
+    isDemoScene = true;
+    video.style.display = 'none';
+    photoCanvas.style.display = 'block';
+    photoCanvas.classList.remove('contain-mode');
+    updateSnapButtonUI();
+
+    const w = Math.max(drawCanvas.clientWidth, 360) * window.devicePixelRatio;
+    const h = Math.max(drawCanvas.clientHeight, 520) * window.devicePixelRatio;
+    photoCanvas.width = w;
+    photoCanvas.height = h;
+    const g = photoCanvas.getContext('2d');
+
+    // Nền bàn kỹ thuật tối có lưới milimet
+    const grad = g.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, '#0f172a');
+    grad.addColorStop(1, '#1e293b');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, w, h);
+
+    // Lưới kỹ thuật
+    const step = w / 12;
+    g.strokeStyle = 'rgba(148, 163, 184, 0.1)';
+    g.lineWidth = 1;
+    for (let x = 0; x < w; x += step) {
+      g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke();
+    }
+    for (let y = 0; y < h; y += step) {
+      g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke();
+    }
+
+    // Vẽ vật mẫu cần đo (Ví dụ: Mẫu bê tông / Hộp thiết bị 140mm x 85mm)
+    const boxX = w * 0.16, boxY = h * 0.25, boxW = w * 0.68, boxH = boxW * 0.58;
+    g.fillStyle = '#334155';
+    g.strokeStyle = '#64748b';
+    g.lineWidth = 3 * window.devicePixelRatio;
+    roundRectPath(g, boxX, boxY, boxW, boxH, 14 * window.devicePixelRatio);
+    g.fill();
+    g.stroke();
+
+    g.fillStyle = '#e2e8f0';
+    g.font = `700 ${13 * window.devicePixelRatio}px system-ui, sans-serif`;
+    g.textAlign = 'center';
+    g.fillText('VẬT THỂ CẦN ĐO (MẪU THỬ)', boxX + boxW / 2, boxY + boxH / 2 - 6 * window.devicePixelRatio);
+    g.fillStyle = '#94a3b8';
+    g.font = `500 ${11 * window.devicePixelRatio}px system-ui, sans-serif`;
+    g.fillText('Chạm 2 góc bất kỳ để đo kích thước hoặc diện tích', boxX + boxW / 2, boxY + boxH / 2 + 14 * window.devicePixelRatio);
+
+    // Vẽ Thẻ chuẩn ISO 85.6mm bên dưới
+    const cardW = w * 0.56;
+    const cardH = cardW * (53.98 / 85.6);
+    const cardX = (w - cardW) / 2;
+    const cardY = h * 0.68 - cardH / 2;
+
+    const cGrad = g.createLinearGradient(cardX, cardY, cardX + cardW, cardY + cardH);
+    cGrad.addColorStop(0, '#312e81');
+    cGrad.addColorStop(1, '#4f46e5');
+    g.fillStyle = cGrad;
+    roundRectPath(g, cardX, cardY, cardW, cardH, 12 * window.devicePixelRatio);
+    g.fill();
+    g.strokeStyle = 'rgba(255,255,255,0.35)';
+    g.lineWidth = 2 * window.devicePixelRatio;
+    g.stroke();
+
+    // Chip thẻ
+    g.fillStyle = '#fbbf24';
+    roundRectPath(g, cardX + cardW * 0.12, cardY + cardH * 0.35, cardW * 0.16, cardH * 0.24, 4 * window.devicePixelRatio);
+    g.fill();
+
+    g.fillStyle = '#ffffff';
+    g.font = `700 ${11.5 * window.devicePixelRatio}px system-ui, sans-serif`;
+    g.textAlign = 'left';
+    g.fillText('THẺ CHUẨN ISO (85.60 × 53.98 mm)', cardX + cardW * 0.12, cardY + cardH * 0.78);
+
+    // Đặt sẵn thanh chuẩn khớp 2 đầu thẻ để người dùng thấy ngay độ chính xác
+    calLine.a = { u: cardX / w, v: (cardY + cardH) / h };
+    calLine.b = { u: (cardX + cardW) / w, v: (cardY + cardH) / h };
+    refMM = 85.6;
+    refName = 'Thẻ ATM/CCCD (Dài)';
+    updateCalBadge();
+
+    // Tạo sẵn 1 phép đo mẫu trên hộp để minh họa trực quan
+    const pxPerMM = getPixelsPerMM();
+    const dpx = boxW;
+    const valMM = dpx / pxPerMM;
+    measurements = [{
+      id: Date.now(),
+      type: 'length',
+      pts: [
+        { u: boxX / w, v: (boxY + boxH * 0.15) / h },
+        { u: (boxX + boxW) / w, v: (boxY + boxH * 0.15) / h }
+      ],
+      valueMM: valMM
+    }];
+    updateReadoutFromLast();
+    updateHistoryBadge();
+    redrawCanvas();
+  }
+
+  function roundRectPath(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  /* ==============================================================
+     4. TÍNH TOÁN TỈ LỆ PIXEL / MM & HÌNH HỌC
+     ============================================================== */
+  function resizeCanvases() {
+    const rect = drawCanvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    drawCanvas.width = Math.max(1, Math.round(rect.width * dpr));
+    drawCanvas.height = Math.max(1, Math.round(rect.height * dpr));
+    if (isDemoScene) {
+      renderDemoBlueprintScene();
+    } else {
+      redrawCanvas();
+    }
+  }
+  window.addEventListener('resize', resizeCanvases);
+
+  function uvToPx(pt) {
+    return {
+      x: pt.u * drawCanvas.width,
+      y: pt.v * drawCanvas.height
+    };
+  }
+
+  function pxToUv(x, y) {
+    return {
+      u: Math.max(0.01, Math.min(0.99, x / drawCanvas.width)),
+      v: Math.max(0.01, Math.min(0.99, y / drawCanvas.height))
+    };
+  }
+
+  function getPixelsPerMM() {
+    const pA = uvToPx(calLine.a);
+    const pB = uvToPx(calLine.b);
+    const distPx = Math.hypot(pB.x - pA.x, pB.y - pA.y);
+    return Math.max(0.001, distPx / refMM);
+  }
+
+  function computePolygonAreaMM2(ptsUv) {
+    const pxPerMM = getPixelsPerMM();
+    const ptsPx = ptsUv.map(uvToPx);
+    let areaPx2 = 0;
+    for (let i = 0; i < ptsPx.length; i++) {
+      const j = (i + 1) % ptsPx.length;
+      areaPx2 += ptsPx[i].x * ptsPx[j].y - ptsPx[j].x * ptsPx[i].y;
+    }
+    areaPx2 = Math.abs(areaPx2) / 2;
+    return areaPx2 / (pxPerMM * pxPerMM);
+  }
+
+  function computeAngleDeg(ptsUv) {
+    const [p1, p2, p3] = ptsUv.map(uvToPx); // p2 là đỉnh góc
+    const v1x = p1.x - p2.x, v1y = p1.y - p2.y;
+    const v2x = p3.x - p2.x, v2y = p3.y - p2.y;
+    const dot = v1x * v2x + v1y * v2y;
+    const mag = Math.hypot(v1x, v1y) * Math.hypot(v2x, v2y);
+    if (mag === 0) return 0;
+    const cos = Math.max(-1, Math.min(1, dot / mag));
+    return (Math.acos(cos) * 180) / Math.PI;
+  }
+
+  function recomputeAllMeasurements() {
+    const pxPerMM = getPixelsPerMM();
+    measurements.forEach(m => {
+      if (m.type === 'length') {
+        const a = uvToPx(m.pts[0]);
+        const b = uvToPx(m.pts[1]);
+        m.valueMM = Math.hypot(b.x - a.x, b.y - a.y) / pxPerMM;
+      } else if (m.type === 'area') {
+        m.areaMM2 = computePolygonAreaMM2(m.pts);
+      } else if (m.type === 'angle') {
+        m.angleDeg = computeAngleDeg(m.pts);
+      }
+    });
+    updateReadoutFromLast();
+  }
+
+  function updateReadoutFromLast() {
+    const mainEl = document.getElementById('mainReadout');
+    const subEl = document.getElementById('subReadout');
+    if (!measurements.length) {
+      mainEl.textContent = '—';
+      subEl.textContent = isCalibrating
+        ? `Đang chỉnh Vật chuẩn: ${refName} (${refMM} mm)`
+        : 'Chạm lên màn hình để bắt đầu đo';
+      return;
+    }
+    const last = measurements[measurements.length - 1];
+    if (last.type === 'length') {
+      mainEl.textContent = formatLength(last.valueMM);
+      subEl.textContent = `Đo chiều dài (#${measurements.length}) • Chuẩn: ${refMM}mm`;
+    } else if (last.type === 'area') {
+      mainEl.textContent = formatArea(last.areaMM2);
+      subEl.textContent = `Diện tích ${last.pts.length} đỉnh (#${measurements.length})`;
+    } else if (last.type === 'angle') {
+      mainEl.textContent = `${last.angleDeg.toFixed(1)}°`;
+      subEl.textContent = `Góc nghiêng 3 điểm (#${measurements.length})`;
+    }
+  }
+
+  function updateCalBadge() {
+    document.getElementById('calStatusText').textContent = `Chuẩn: ${refMM}mm`;
+  }
+
+  function updateHistoryBadge() {
+    document.getElementById('badgeCount').textContent = String(measurements.length);
+  }
+
+  /* ==============================================================
+     5. VẼ ĐỒ HỌA LÊN DRAW CANVAS & KÍNH LÚP PHÓNG ĐẠI 3.5X
+     ============================================================== */
+  function redrawCanvas() {
+    const w = drawCanvas.width;
+    const h = drawCanvas.height;
+    const dp = window.devicePixelRatio || 1;
+    dctx.clearRect(0, 0, w, h);
+
+    if (currentMode !== 'ruler') return;
+
+    // 1. Vẽ Thanh Chuẩn Tham Chiếu (Màu Tím Indigo)
+    const calA = uvToPx(calLine.a);
+    const calB = uvToPx(calLine.b);
+    drawSegmentWithLabel(
+      calA,
+      calB,
+      isCalibrating ? '#a855f7' : 'rgba(139, 92, 246, 0.85)',
+      `🎯 Chuẩn: ${refMM} mm`,
+      isCalibrating ? 3.5 * dp : 2.2 * dp,
+      true
+    );
+
+    // 2. Vẽ các kết quả đã đo
+    measurements.forEach((m, idx) => {
+      if (m.type === 'length') {
+        const p0 = uvToPx(m.pts[0]);
+        const p1 = uvToPx(m.pts[1]);
+        drawSegmentWithLabel(p0, p1, '#00e5b0', `#${idx + 1}: ${formatLength(m.valueMM)}`, 3 * dp, false);
+      } else if (m.type === 'area') {
+        drawPolygonArea(m.pts.map(uvToPx), `#${idx + 1}: ${formatArea(m.areaMM2)}`, dp);
+      } else if (m.type === 'angle') {
+        drawAngleWidget(m.pts.map(uvToPx), `${m.angleDeg.toFixed(1)}°`, dp);
+      }
+    });
+
+    // 3. Vẽ các điểm đang chấm dở (pendingPts)
+    if (pendingPts.length > 0) {
+      const pxs = pendingPts.map(uvToPx);
+      dctx.strokeStyle = '#f59e0b';
+      dctx.lineWidth = 2.5 * dp;
+      dctx.setLineDash([6 * dp, 5 * dp]);
+      dctx.beginPath();
+      pxs.forEach((p, i) => {
+        if (i === 0) dctx.moveTo(p.x, p.y);
+        else dctx.lineTo(p.x, p.y);
+      });
+      if (activePointerPos) {
+        dctx.lineTo(activePointerPos.x, activePointerPos.y);
+      }
+      dctx.stroke();
+      dctx.setLineDash([]);
+      pxs.forEach(p => drawEndpointHandle(p, '#f59e0b', dp));
+
+      // Hiển thị số đo tạm thời khi đang kéo điểm thứ 2
+      if (currentTool === 'length' && pxs.length === 1 && activePointerPos) {
+        const dpx = Math.hypot(activePointerPos.x - pxs[0].x, activePointerPos.y - pxs[0].y);
+        const liveMM = dpx / getPixelsPerMM();
+        document.getElementById('mainReadout').textContent = formatLength(liveMM);
+      }
+    }
+
+    // 4. Vẽ Kính Lúp Phóng Đại 3.5x (Precision Magnifier Loupe) khi ngón tay đang chạm giữ
+    if (activePointerPos) {
+      drawMagnifierLoupe(activePointerPos.x, activePointerPos.y, dp);
+    }
+  }
+
+  function drawEndpointHandle(p, color, dp) {
+    // Vòng ngoài
+    dctx.beginPath();
+    dctx.arc(p.x, p.y, 8 * dp, 0, Math.PI * 2);
+    dctx.fillStyle = color;
+    dctx.fill();
+    dctx.lineWidth = 2 * dp;
+    dctx.strokeStyle = '#ffffff';
+    dctx.stroke();
+
+    // Tâm chữ thập mảnh
+    dctx.strokeStyle = color;
+    dctx.lineWidth = 1.4 * dp;
+    dctx.beginPath();
+    dctx.moveTo(p.x - 15 * dp, p.y); dctx.lineTo(p.x + 15 * dp, p.y);
+    dctx.moveTo(p.x, p.y - 15 * dp); dctx.lineTo(p.x, p.y + 15 * dp);
+    dctx.stroke();
+  }
+
+  function drawSegmentWithLabel(a, b, color, text, lineW, isDashed) {
+    const dp = window.devicePixelRatio || 1;
+    dctx.save();
+    dctx.beginPath();
+    dctx.moveTo(a.x, a.y);
+    dctx.lineTo(b.x, b.y);
+    dctx.strokeStyle = color;
+    dctx.lineWidth = lineW;
+    if (isDashed) dctx.setLineDash([8 * dp, 5 * dp]);
+    dctx.stroke();
+    dctx.setLineDash([]);
+
+    // Vẽ 2 vạch chặn vuông góc ở 2 đầu mút như thước kẹp kỹ thuật
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = (-dy / len) * 10 * dp;
+    const ny = (dx / len) * 10 * dp;
+    dctx.beginPath();
+    dctx.moveTo(a.x - nx, a.y - ny); dctx.lineTo(a.x + nx, a.y + ny);
+    dctx.moveTo(b.x - nx, b.y - ny); dctx.lineTo(b.x + nx, b.y + ny);
+    dctx.lineWidth = 2.2 * dp;
+    dctx.stroke();
+
+    drawEndpointHandle(a, color, dp);
+    drawEndpointHandle(b, color, dp);
+
+    if (text) {
+      const mx = (a.x + b.x) / 2;
+      const my = (a.y + b.y) / 2;
+      drawPillLabel(mx, my - 18 * dp, text, color, dp);
+    }
+    dctx.restore();
+  }
+
+  function drawPolygonArea(pts, label, dp) {
+    if (pts.length < 3) return;
+    dctx.save();
+    dctx.beginPath();
+    pts.forEach((p, i) => {
+      if (i === 0) dctx.moveTo(p.x, p.y);
+      else dctx.lineTo(p.x, p.y);
+    });
+    dctx.closePath();
+    dctx.fillStyle = 'rgba(0, 229, 176, 0.20)';
+    dctx.fill();
+    dctx.strokeStyle = '#00e5b0';
+    dctx.lineWidth = 2.5 * dp;
+    dctx.stroke();
+
+    // Ghi kích thước từng cạnh của đa giác
+    const pxPerMM = getPixelsPerMM();
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i];
+      const b = pts[(i + 1) % pts.length];
+      const edgeMM = Math.hypot(b.x - a.x, b.y - a.y) / pxPerMM;
+      drawPillLabel((a.x + b.x) / 2, (a.y + b.y) / 2, formatLength(edgeMM), '#38bdf8', dp * 0.85);
+      drawEndpointHandle(a, '#00e5b0', dp);
+    }
+
+    // Tâm đa giác
+    const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
+    const cy = pts.reduce((s, p) => s + p.y, 0) / pts.length;
+    drawPillLabel(cx, cy, label, '#00e5b0', dp);
+    dctx.restore();
+  }
+
+  function drawAngleWidget(pts, label, dp) {
+    if (pts.length < 3) return;
+    const [p1, p2, p3] = pts;
+    dctx.save();
+    dctx.strokeStyle = '#f59e0b';
+    dctx.lineWidth = 3 * dp;
+    dctx.beginPath();
+    dctx.moveTo(p1.x, p1.y);
+    dctx.lineTo(p2.x, p2.y);
+    dctx.lineTo(p3.x, p3.y);
+    dctx.stroke();
+
+    // Cung tròn góc
+    const a1 = Math.atan2(p1.y - p2.y, p1.x - p2.x);
+    const a2 = Math.atan2(p3.y - p2.y, p3.x - p2.x);
+    dctx.beginPath();
+    dctx.arc(p2.x, p2.y, 26 * dp, a1, a2, false);
+    dctx.strokeStyle = 'rgba(245, 158, 11, 0.75)';
+    dctx.lineWidth = 2 * dp;
+    dctx.stroke();
+
+    pts.forEach(p => drawEndpointHandle(p, '#f59e0b', dp));
+    drawPillLabel(p2.x, p2.y - 24 * dp, `🧭 ${label}`, '#f59e0b', dp);
+    dctx.restore();
+  }
+
+  function drawPillLabel(cx, cy, text, borderColor, dp) {
+    dctx.save();
+    dctx.font = `700 ${12.5 * dp}px system-ui, sans-serif`;
+    const padX = 10 * dp;
+    const w = dctx.measureText(text).width + padX * 2;
+    const h = 24 * dp;
+    const x = Math.max(4 * dp, Math.min(drawCanvas.width - w - 4 * dp, cx - w / 2));
+    const y = Math.max(4 * dp, Math.min(drawCanvas.height - h - 4 * dp, cy - h / 2));
+
+    dctx.fillStyle = 'rgba(9, 13, 22, 0.88)';
+    roundRectPath(dctx, x, y, w, h, 8 * dp);
+    dctx.fill();
+    dctx.strokeStyle = borderColor;
+    dctx.lineWidth = 1.5 * dp;
+    dctx.stroke();
+
+    dctx.fillStyle = '#ffffff';
+    dctx.textAlign = 'center';
+    dctx.textBaseline = 'middle';
+    dctx.fillText(text, x + w / 2, y + h / 2 + 1 * dp);
+    dctx.restore();
+  }
+
+  function drawMagnifierLoupe(x, y, dp) {
+    const sourceEl = isFrozenPhoto ? photoCanvas : video;
+    const srcW = isFrozenPhoto ? photoCanvas.width : video.videoWidth;
+    const srcH = isFrozenPhoto ? photoCanvas.height : video.videoHeight;
+    if (!srcW || !srcH) return;
+
+    const R = 54 * dp;
+    const zoom = 3.2;
+    let loupeX = x;
+    let loupeY = y - R - 42 * dp;
+    if (loupeY - R < 10 * dp) loupeY = y + R + 42 * dp; // Đảo xuống nếu chạm mép trên
+
+    // Quy đổi tọa độ từ drawCanvas sang sourceEl
+    const contain = isFrozenPhoto && photoCanvas.classList.contains('contain-mode');
+    const scale = contain
+      ? Math.min(drawCanvas.width / srcW, drawCanvas.height / srcH)
+      : Math.max(drawCanvas.width / srcW, drawCanvas.height / srcH);
+    const offX = (drawCanvas.width - srcW * scale) / 2;
+    const offY = (drawCanvas.height - srcH * scale) / 2;
+    const ix = (x - offX) / scale;
+    const iy = (y - offY) / scale;
+    const srcR = R / (scale * zoom);
+
+    dctx.save();
+    dctx.beginPath();
+    dctx.arc(loupeX, loupeY, R, 0, Math.PI * 2);
+    dctx.clip();
+
+    dctx.fillStyle = '#000';
+    dctx.fillRect(loupeX - R, loupeY - R, R * 2, R * 2);
+    try {
+      dctx.drawImage(
+        sourceEl,
+        ix - srcR, iy - srcR, srcR * 2, srcR * 2,
+        loupeX - R, loupeY - R, R * 2, R * 2
+      );
+    } catch {}
+
+    // Tâm ngắm kính lúp
+    dctx.strokeStyle = '#00e5b0';
+    dctx.lineWidth = 1.5 * dp;
+    dctx.beginPath();
+    dctx.moveTo(loupeX - R, loupeY); dctx.lineTo(loupeX + R, loupeY);
+    dctx.moveTo(loupeX, loupeY - R); dctx.lineTo(loupeX, loupeY + R);
+    dctx.stroke();
+    dctx.restore();
+
+    // Viền kính lúp
+    dctx.beginPath();
+    dctx.arc(loupeX, loupeY, R, 0, Math.PI * 2);
+    dctx.strokeStyle = '#ffffff';
+    dctx.lineWidth = 3 * dp;
+    dctx.stroke();
+  }
+
+  /* ==============================================================
+     6. TƯƠNG TÁC CẢM ỨNG / CHUỘT TRÊN DRAW CANVAS
+     ============================================================== */
+  function getCanvasPointerPos(e) {
+    const rect = drawCanvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    return {
+      x: (e.clientX - rect.left) * dpr,
+      y: (e.clientY - rect.top) * dpr
+    };
+  }
+
+  function findNearbyHandle(x, y) {
+    const dp = window.devicePixelRatio || 1;
+    const hitRadius = 24 * dp;
+
+    // 1. Kiểm tra 2 đầu thanh chuẩn
+    const calA = uvToPx(calLine.a);
+    const calB = uvToPx(calLine.b);
+    if (Math.hypot(x - calA.x, y - calA.y) <= hitRadius) return { target: 'calA' };
+    if (Math.hypot(x - calB.x, y - calB.y) <= hitRadius) return { target: 'calB' };
+
+    // 2. Kiểm tra các điểm đã đo (cho phép kéo tinh chỉnh lại bất kỳ lúc nào!)
+    for (let mIdx = measurements.length - 1; mIdx >= 0; mIdx--) {
+      const m = measurements[mIdx];
+      for (let pIdx = 0; pIdx < m.pts.length; pIdx++) {
+        const p = uvToPx(m.pts[pIdx]);
+        if (Math.hypot(x - p.x, y - p.y) <= hitRadius) {
+          return { target: 'meas', measIdx: mIdx, ptIdx: pIdx };
+        }
+      }
+    }
+    return null;
+  }
+
+  drawCanvas.addEventListener('pointerdown', e => {
+    if (currentMode !== 'ruler') return;
+    try { drawCanvas.setPointerCapture(e.pointerId); } catch {}
+    document.getElementById('coachBox').classList.add('faded');
+
+    const pos = getCanvasPointerPos(e);
+    activePointerPos = pos;
+
+    // Kiểm tra xem người dùng có chạm trúng điểm mút nào để kéo chỉnh không
+    const handle = findNearbyHandle(pos.x, pos.y);
+    if (handle) {
+      draggingHandle = handle;
+      redrawCanvas();
+      return;
+    }
+
+    // Nếu đang bật chế độ Đặt Chuẩn, chạm mới sẽ đặt lại đầu mút chuẩn gần nhất
+    if (isCalibrating) {
+      const calA = uvToPx(calLine.a);
+      const calB = uvToPx(calLine.b);
+      const dA = Math.hypot(pos.x - calA.x, pos.y - calA.y);
+      const dB = Math.hypot(pos.x - calB.x, pos.y - calB.y);
+      draggingHandle = { target: dA <= dB ? 'calA' : 'calB' };
+      const uv = pxToUv(pos.x, pos.y);
+      if (draggingHandle.target === 'calA') calLine.a = uv;
+      else calLine.b = uv;
+      recomputeAllMeasurements();
+      redrawCanvas();
+      return;
+    }
+
+    // Chế độ đo bình thường: tạo điểm mới và cho phép trượt ngón tay kèm kính lúp trước khi nhả
+    draggingHandle = { target: 'newPoint' };
+    redrawCanvas();
+  });
+
+  drawCanvas.addEventListener('pointermove', e => {
+    if (!activePointerPos) return;
+    const pos = getCanvasPointerPos(e);
+    activePointerPos = pos;
+    const uv = pxToUv(pos.x, pos.y);
+
+    if (draggingHandle) {
+      if (draggingHandle.target === 'calA') {
+        calLine.a = uv;
+        recomputeAllMeasurements();
+      } else if (draggingHandle.target === 'calB') {
+        calLine.b = uv;
+        recomputeAllMeasurements();
+      } else if (draggingHandle.target === 'meas') {
+        measurements[draggingHandle.measIdx].pts[draggingHandle.ptIdx] = uv;
+        recomputeAllMeasurements();
+      }
+    }
+    redrawCanvas();
+  });
+
+  drawCanvas.addEventListener('pointerup', e => {
+    if (!activePointerPos) return;
+    const pos = activePointerPos;
+    const uv = pxToUv(pos.x, pos.y);
+
+    if (draggingHandle && draggingHandle.target === 'newPoint') {
+      pendingPts.push(uv);
+      checkCommitPendingMeasurement();
+    }
+
+    draggingHandle = null;
+    activePointerPos = null;
+    redrawCanvas();
+  });
+
+  drawCanvas.addEventListener('pointercancel', () => {
+    draggingHandle = null;
+    activePointerPos = null;
+    redrawCanvas();
+  });
+
+  function checkCommitPendingMeasurement() {
+    const pxPerMM = getPixelsPerMM();
+    if (currentTool === 'length' && pendingPts.length === 2) {
+      const a = uvToPx(pendingPts[0]);
+      const b = uvToPx(pendingPts[1]);
+      const valMM = Math.hypot(b.x - a.x, b.y - a.y) / pxPerMM;
+      measurements.push({
+        id: Date.now(),
+        type: 'length',
+        pts: [...pendingPts],
+        valueMM: valMM
+      });
+      pendingPts = [];
+      updateReadoutFromLast();
+      updateHistoryBadge();
+    } else if (currentTool === 'angle' && pendingPts.length === 3) {
+      const deg = computeAngleDeg(pendingPts);
+      measurements.push({
+        id: Date.now(),
+        type: 'angle',
+        pts: [...pendingPts],
+        angleDeg: deg
+      });
+      pendingPts = [];
+      updateReadoutFromLast();
+      updateHistoryBadge();
+    } else if (currentTool === 'area' && pendingPts.length === 4) {
+      const areaMM2 = computePolygonAreaMM2(pendingPts);
+      measurements.push({
+        id: Date.now(),
+        type: 'area',
+        pts: [...pendingPts],
+        areaMM2
+      });
+      pendingPts = [];
+      updateReadoutFromLast();
+      updateHistoryBadge();
+    }
+  }
+
+  /* ==============================================================
+     7. CHẾ ĐỘ 2: ĐO KHOẢNG CÁCH & CHIỀU CAO BẰNG GÓC NGHIÊNG (TRIG)
+     ============================================================== */
+  let currentTiltDeg = 55; // Góc từ phương thẳng đứng (0° = nhìn thẳng xuống đất, 90° = nhìn ngang tầm mắt)
+  let lockedBaseDeg = null;
+  let lockedTopDeg = null;
+
+  function updateTrigCalculations() {
+    const camH_m = (parseFloat(document.getElementById('inpCamHeight').value) || 150) / 100;
+    const tiltRad = (currentTiltDeg * Math.PI) / 180;
+    document.getElementById('lblTiltDeg').textContent = `${currentTiltDeg.toFixed(1)}°`;
+
+    // Nếu chưa khóa chân vật, hiển thị khoảng cách trực tiếp theo góc nghiêng hiện tại (với góc < 89°)
+    const baseDegUsed = lockedBaseDeg !== null ? lockedBaseDeg : Math.min(88.5, Math.max(5, currentTiltDeg));
+    const baseRad = (baseDegUsed * Math.PI) / 180;
+    const distM = camH_m * Math.tan(baseRad);
+    const slantM = camH_m / Math.cos(baseRad);
+
+    document.getElementById('trigDistVal').textContent = formatLength(distM * 1000);
+    document.getElementById('trigSlantVal').textContent = formatLength(slantM * 1000);
+
+    if (currentMode === 'trig') {
+      document.getElementById('mainReadout').textContent = formatLength(distM * 1000);
+      document.getElementById('subReadout').textContent = lockedBaseDeg
+        ? `Đã khóa chân (${lockedBaseDeg.toFixed(1)}°) — Ngắm lên đỉnh vật rồi bấm Khóa Đỉnh`
+        : 'Ngắm tâm chữ thập vào chân vật thể dưới sàn';
+    }
+
+    if (lockedBaseDeg !== null) {
+      const topDegUsed = lockedTopDeg !== null ? lockedTopDeg : currentTiltDeg;
+      // Góc nâng/hạ so với phương ngang (90°)
+      const alphaRad = ((topDegUsed - 90) * Math.PI) / 180;
+      const objHeightM = camH_m + distM * Math.tan(alphaRad);
+      const validH = Math.max(0, objHeightM);
+      document.getElementById('trigHeightVal').textContent = formatLength(validH * 1000);
+      if (lockedTopDeg !== null && currentMode === 'trig') {
+        document.getElementById('mainReadout').textContent = `Cao: ${formatLength(validH * 1000)}`;
+        document.getElementById('subReadout').textContent = `Khoảng cách: ${formatLength(distM * 1000)} • Cao: ${formatLength(validH * 1000)}`;
+      }
+    } else {
+      document.getElementById('trigHeightVal').textContent = '—';
+    }
+  }
+
+  document.getElementById('sliderTilt').addEventListener('input', e => {
+    currentTiltDeg = parseFloat(e.target.value);
+    document.getElementById('sensorSourceLbl').textContent = 'Thanh trượt';
+    updateTrigCalculations();
+  });
+
+  document.getElementById('inpCamHeight').addEventListener('input', updateTrigCalculations);
+
+  document.getElementById('btnLockBase').addEventListener('click', () => {
+    lockedBaseDeg = Math.min(88.5, Math.max(5, currentTiltDeg));
+    lockedTopDeg = null;
+    updateTrigCalculations();
+    showToast(`🎯 Đã khóa góc chân vật (${lockedBaseDeg.toFixed(1)}°)! Hãy ngắm lên đỉnh vật.`);
+  });
+
+  document.getElementById('btnLockTop').addEventListener('click', () => {
+    if (lockedBaseDeg === null) {
+      lockedBaseDeg = 55;
+    }
+    lockedTopDeg = currentTiltDeg;
+    updateTrigCalculations();
+
+    // Lưu vào danh sách lịch sử đo
+    const camH_m = (parseFloat(document.getElementById('inpCamHeight').value) || 150) / 100;
+    const distM = camH_m * Math.tan((lockedBaseDeg * Math.PI) / 180);
+    const alphaRad = ((lockedTopDeg - 90) * Math.PI) / 180;
+    const objHeightM = Math.max(0, camH_m + distM * Math.tan(alphaRad));
+    measurements.push({
+      id: Date.now(),
+      type: 'length',
+      pts: [{ u: 0.5, v: 0.8 }, { u: 0.5, v: 0.2 }],
+      valueMM: objHeightM * 1000,
+      customNote: `Chiều cao từ xa (Cách ${formatLength(distM * 1000)})`
+    });
+    updateHistoryBadge();
+    showToast('✅ Đã đo & lưu chiều cao vật thể!');
+  });
+
+  // Lắng nghe cảm biến góc nghiêng điện thoại (DeviceOrientationEvent)
+  function initDeviceOrientation() {
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission().then(state => {
+        if (state === 'granted') bindOrientationListener();
+      }).catch(() => {});
+    } else {
+      bindOrientationListener();
+    }
+  }
+
+  function bindOrientationListener() {
+    window.addEventListener('deviceorientation', e => {
+      if (e.beta === null || currentMode !== 'trig') return;
+      // Khi cầm đứng điện thoại: beta ~ 90° là thẳng đứng nhìn ngang, beta ~ 0° là úp xuống đất
+      const tilt = Math.max(5, Math.min(135, e.beta));
+      currentTiltDeg = tilt;
+      document.getElementById('sliderTilt').value = String(tilt.toFixed(1));
+      document.getElementById('sensorSourceLbl').textContent = 'Cảm biến Gyro';
+      updateTrigCalculations();
+    });
+  }
+
+  /* ==============================================================
+     8. CHẾ ĐỘ 3: ĐO AR 3D BẰNG WEBXR HIT-TEST (THREE.JS)
+     ============================================================== */
+  let xrRenderer = null, xrScene = null, xrCamera = null, xrReticle = null, xrSession = null, xrHitTestSource = null;
+  let xrPts = [];
+
+  async function launchWebXRMode() {
+    if (!navigator.xr) {
+      showToast('⚠️ Trình duyệt này không hỗ trợ WebXR. Hãy dùng Chế độ Thước Camera hoặc Đo Xa!');
+      switchMode('ruler');
+      return;
+    }
+    const supported = await navigator.xr.isSessionSupported('immersive-ar').catch(() => false);
+    if (!supported) {
+      showToast('⚠️ Thiết bị chưa hỗ trợ ARCore WebXR. Đã chuyển sang Thước Camera!');
+      switchMode('ruler');
+      return;
+    }
+
+    try {
+      await ensureThreeJS();
+      stopLiveCamera();
+      const vp = document.getElementById('viewportArea');
+      if (!xrRenderer) {
+        xrRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        xrRenderer.setPixelRatio(window.devicePixelRatio);
+        xrRenderer.setSize(vp.clientWidth, vp.clientHeight);
+        xrRenderer.xr.enabled = true;
+        vp.appendChild(xrRenderer.domElement);
+
+        xrScene = new THREE.Scene();
+        xrCamera = new THREE.PerspectiveCamera(70, vp.clientWidth / vp.clientHeight, 0.01, 20);
+        xrScene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 2));
+
+        xrReticle = new THREE.Mesh(
+          new THREE.RingGeometry(0.04, 0.052, 36).rotateX(-Math.PI / 2),
+          new THREE.MeshBasicMaterial({ color: 0x00e5b0 })
+        );
+        xrReticle.matrixAutoUpdate = false;
+        xrReticle.visible = false;
+        xrScene.add(xrReticle);
+      }
+
+      xrSession = await navigator.xr.requestSession('immersive-ar', {
+        requiredFeatures: ['hit-test'],
+        optionalFeatures: ['dom-overlay'],
+        domOverlay: { root: document.getElementById('phoneFrame') }
+      });
+      xrRenderer.xr.setReferenceSpaceType('local');
+      await xrRenderer.xr.setSession(xrSession);
+
+      const viewerSpace = await xrSession.requestReferenceSpace('viewer');
+      xrHitTestSource = await xrSession.requestHitTestSource({ space: viewerSpace });
+
+      xrSession.addEventListener('select', () => {
+        if (!xrReticle.visible) return;
+        const p = new THREE.Vector3().setFromMatrixPosition(xrReticle.matrix);
+        xrPts.push(p);
+        const dot = new THREE.Mesh(
+          new THREE.SphereGeometry(0.009, 16, 16),
+          new THREE.MeshBasicMaterial({ color: 0x6366f1 })
+        );
+        dot.position.copy(p);
+        xrScene.add(dot);
+
+        if (xrPts.length % 2 === 0) {
+          const a = xrPts[xrPts.length - 2];
+          const distMM = a.distanceTo(p) * 1000;
+          const line = new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints([a, p]),
+            new THREE.LineBasicMaterial({ color: 0x00e5b0, linewidth: 3 })
+          );
+          xrScene.add(line);
+          measurements.push({
+            id: Date.now(),
+            type: 'length',
+            pts: [{ u: 0.3, v: 0.5 }, { u: 0.7, v: 0.5 }],
+            valueMM: distMM,
+            customNote: 'Đo không gian AR 3D'
+          });
+          updateReadoutFromLast();
+          updateHistoryBadge();
+        }
+      });
+
+      xrSession.addEventListener('end', () => {
+        xrRenderer.setAnimationLoop(null);
+        xrSession = null;
+        xrHitTestSource = null;
+        switchMode('ruler');
+      });
+
+      xrRenderer.setAnimationLoop((t, frame) => {
+        if (!frame) return;
+        const refSpace = xrRenderer.xr.getReferenceSpace();
+        const hits = xrHitTestSource ? frame.getHitTestResults(xrHitTestSource) : [];
+        if (hits.length) {
+          const pose = hits[0].getPose(refSpace);
+          xrReticle.visible = true;
+          xrReticle.matrix.fromArray(pose.transform.matrix);
+          if (xrPts.length % 2 === 1) {
+            const cur = new THREE.Vector3().setFromMatrixPosition(xrReticle.matrix);
+            const liveMM = cur.distanceTo(xrPts[xrPts.length - 1]) * 1000;
+            document.getElementById('mainReadout').textContent = formatLength(liveMM);
+            document.getElementById('subReadout').textContent = 'AR 3D Live — Chạm màn hình để khóa điểm 2';
+          }
+        } else {
+          xrReticle.visible = false;
+        }
+        xrRenderer.render(xrScene, xrCamera);
+      });
+    } catch (err) {
+      showToast('⚠️ Không thể khởi tạo phiên AR: ' + (err.message || err));
+      switchMode('ruler');
+    }
+  }
+
+  /* ==============================================================
+     9. GẮN SỰ KIỆN NÚT BẤM GIAO DIỆN
+     ============================================================== */
+  function switchMode(mode) {
+    currentMode = mode;
+    document.querySelectorAll('.mode-tab').forEach(b => {
+      b.classList.toggle('active', b.dataset.mode === mode);
+    });
+    document.getElementById('rulerToolbar').style.display = mode === 'ruler' ? 'flex' : 'none';
+    document.getElementById('trigOverlay').classList.toggle('active', mode === 'trig');
+
+    if (mode === 'trig') {
+      initDeviceOrientation();
+      updateTrigCalculations();
+    } else if (mode === 'ar') {
+      launchWebXRMode();
+    } else {
+      updateReadoutFromLast();
+    }
+    redrawCanvas();
+  }
+
+  document.querySelectorAll('.mode-tab').forEach(btn => {
+    btn.addEventListener('click', () => switchMode(btn.dataset.mode));
+  });
+
+  // Đổi công cụ Dài / Diện tích / Góc
+  document.querySelectorAll('.tool-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentTool = btn.dataset.tool;
+      isCalibrating = false;
+      document.getElementById('btnCalibrateMode').classList.remove('active');
+      pendingPts = [];
+      document.querySelectorAll('.tool-btn').forEach(b => b.classList.toggle('active', b === btn));
+      const hints = {
+        length: '📏 Chạm 2 điểm trên màn hình để đo Chiều dài / Chiều rộng.',
+        area: '⬛ Chạm 4 góc bao quanh bề mặt để tính Diện tích thực tế.',
+        angle: '🧭 Chạm 3 điểm (Điểm 2 là đỉnh góc) để đo Góc nghiêng.'
+      };
+      showToast(hints[currentTool]);
+      redrawCanvas();
+    });
+  });
+
+  // Đổi đơn vị mm / cm / m / in
+  document.querySelectorAll('#unitBar button').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.unit === currentUnit);
+    btn.addEventListener('click', () => {
+      currentUnit = btn.dataset.unit;
+      localStorage.setItem('scm_unit', currentUnit);
+      document.querySelectorAll('#unitBar button').forEach(b => b.classList.toggle('active', b === btn));
+      updateReadoutFromLast();
+      if (currentMode === 'trig') updateTrigCalculations();
+      redrawCanvas();
+    });
+  });
+
+  // Chụp ảnh / Mở lại Camera Live
+  document.getElementById('btnSnapToggle').addEventListener('click', () => {
+    if (isFrozenPhoto) {
+      startLiveCamera();
+      return;
+    }
+    if (!video.videoWidth) {
+      renderDemoBlueprintScene();
+      return;
+    }
+    photoCanvas.width = video.videoWidth;
+    photoCanvas.height = video.videoHeight;
+    photoCanvas.classList.remove('contain-mode');
+    photoCanvas.getContext('2d').drawImage(video, 0, 0);
+    photoCanvas.style.display = 'block';
+    video.style.display = 'none';
+    isFrozenPhoto = true;
+    stopLiveCamera();
+    updateSnapButtonUI();
+    showToast('📸 Đã đóng băng khung hình để đo chính xác!');
+    redrawCanvas();
+  });
+
+  // Bật / tắt chế độ Đặt chuẩn hoặc mở bảng chọn Vật chuẩn
+  document.getElementById('btnCalibrateMode').addEventListener('click', () => {
+    document.getElementById('sheetRef').classList.add('open');
+  });
+  document.getElementById('btnOpenRef').addEventListener('click', () => {
+    document.getElementById('sheetRef').classList.add('open');
+  });
+  document.getElementById('btnCloseRef').addEventListener('click', () => {
+    document.getElementById('sheetRef').classList.remove('open');
+  });
+
+  // Chọn vật chuẩn trong danh sách
+  document.querySelectorAll('.ref-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.ref-item').forEach(i => i.classList.remove('selected'));
+      item.classList.add('selected');
+      refMM = parseFloat(item.dataset.mm);
+      refName = item.dataset.name;
+      isCalibrating = true;
+      updateCalBadge();
+      recomputeAllMeasurements();
+      document.getElementById('sheetRef').classList.remove('open');
+      showToast(`🎯 Đã chọn chuẩn ${refMM}mm! Hãy kéo 2 đầu thanh màu tím khớp với vật chuẩn.`);
+      redrawCanvas();
+    });
+  });
+
+  document.getElementById('btnApplyCustomMM').addEventListener('click', () => {
+    const val = parseFloat(document.getElementById('inpCustomMM').value);
+    if (val > 0) {
+      refMM = val;
+      refName = `Tùy chỉnh (${val}mm)`;
+      isCalibrating = true;
+      updateCalBadge();
+      recomputeAllMeasurements();
+      document.getElementById('sheetRef').classList.remove('open');
+      showToast(`🎯 Đã đặt chuẩn ${val} mm!`);
+      redrawCanvas();
+    }
+  });
+
+  // Hoàn tác & Xóa
+  document.getElementById('btnUndo').addEventListener('click', () => {
+    if (pendingPts.length > 0) {
+      pendingPts.pop();
+    } else if (measurements.length > 0) {
+      measurements.pop();
+      updateHistoryBadge();
+    }
+    updateReadoutFromLast();
+    redrawCanvas();
+  });
+
+  document.getElementById('btnClear').addEventListener('click', () => {
+    pendingPts = [];
+    measurements = [];
+    lockedBaseDeg = null;
+    lockedTopDeg = null;
+    updateHistoryBadge();
+    updateReadoutFromLast();
+    if (currentMode === 'trig') updateTrigCalculations();
+    redrawCanvas();
+    showToast('🗑️ Đã xóa các đường đo!');
+  });
+
+  // Bật Ảnh Mẫu Thử
+  document.getElementById('btnDemoScene').addEventListener('click', () => {
+    switchMode('ruler');
+    renderDemoBlueprintScene();
+    showToast('🖼️ Đã nạp Bàn Đo Mẫu kèm Thẻ chuẩn 85.6mm!');
+  });
+
+  // Tải ảnh từ thư viện điện thoại / máy tính
+  document.getElementById('fileUploadImg').addEventListener('change', e => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const img = new Image();
+    img.onload = () => {
+      stopLiveCamera();
+      photoCanvas.width = img.naturalWidth;
+      photoCanvas.height = img.naturalHeight;
+      photoCanvas.classList.add('contain-mode');
+      const g = photoCanvas.getContext('2d');
+      g.clearRect(0, 0, photoCanvas.width, photoCanvas.height);
+      g.drawImage(img, 0, 0);
+      photoCanvas.style.display = 'block';
+      video.style.display = 'none';
+      isFrozenPhoto = true;
+      isDemoScene = false;
+      updateSnapButtonUI();
+      redrawCanvas();
+      showToast('📂 Đã tải ảnh lên! Hãy kéo thanh tím vào vật chuẩn.');
+    };
+    img.src = URL.createObjectURL(file);
+    e.target.value = '';
+  });
+
+  // Đổi Camera Trước / Sau
+  document.getElementById('btnFlipCam').addEventListener('click', () => {
+    facingMode = facingMode === 'environment' ? 'user' : 'environment';
+    startLiveCamera();
+  });
+
+  // Xuất Ảnh Báo Cáo Đã Đo (Save Annotated PNG)
+  function exportAnnotatedImage() {
+    const out = document.createElement('canvas');
+    out.width = drawCanvas.width;
+    out.height = drawCanvas.height;
+    const ctx = out.getContext('2d');
+
+    // Vẽ nền từ video hoặc photoCanvas
+    ctx.fillStyle = '#090d16';
+    ctx.fillRect(0, 0, out.width, out.height);
+    const srcEl = isFrozenPhoto ? photoCanvas : video;
+    const srcW = isFrozenPhoto ? photoCanvas.width : video.videoWidth;
+    const srcH = isFrozenPhoto ? photoCanvas.height : video.videoHeight;
+    if (srcW && srcH) {
+      const contain = isFrozenPhoto && photoCanvas.classList.contains('contain-mode');
+      const scale = contain
+        ? Math.min(out.width / srcW, out.height / srcH)
+        : Math.max(out.width / srcW, out.height / srcH);
+      const offX = (out.width - srcW * scale) / 2;
+      const offY = (out.height - srcH * scale) / 2;
+      try {
+        ctx.drawImage(srcEl, offX, offY, srcW * scale, srcH * scale);
+      } catch {}
+    }
+
+    // Vẽ đè lớp đường đo
+    ctx.drawImage(drawCanvas, 0, 0);
+
+    // Đóng dấu thông tin báo cáo ở góc dưới
+    const dp = window.devicePixelRatio || 1;
+    ctx.fillStyle = 'rgba(9, 13, 22, 0.86)';
+    ctx.fillRect(0, out.height - 42 * dp, out.width, 42 * dp);
+    ctx.fillStyle = '#00e5b0';
+    ctx.font = `700 ${12 * dp}px system-ui, sans-serif`;
+    const nowStr = new Date().toLocaleString('vi-VN');
+    ctx.fillText(`📏 SmartCam Measure Pro • Chuẩn: ${refMM}mm • ${nowStr}`, 14 * dp, out.height - 16 * dp);
+
+    const url = out.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `DoKichThuoc_${Date.now()}.png`;
+    a.click();
+    showToast('💾 Đã tải xuống ảnh kết quả đo!');
+  }
+
+  document.getElementById('btnExportImg').addEventListener('click', exportAnnotatedImage);
+  document.getElementById('btnDownloadSnapshot2').addEventListener('click', exportAnnotatedImage);
+
+  // Mở Bảng Lịch Sử Đo
+  function renderHistorySheet() {
+    const box = document.getElementById('historyList');
+    if (!measurements.length) {
+      box.innerHTML = `<div style="text-align:center;color:var(--muted);padding:20px;">Chưa có phép đo nào. Hãy chạm lên màn hình để đo!</div>`;
+      return;
+    }
+    box.innerHTML = measurements.map((m, i) => {
+      let label = '';
+      let val = '';
+      if (m.type === 'length') {
+        label = m.customNote || `Đo chiều dài #${i + 1}`;
+        val = formatLength(m.valueMM);
+      } else if (m.type === 'area') {
+        label = `Đo diện tích #${i + 1}`;
+        val = formatArea(m.areaMM2);
+      } else if (m.type === 'angle') {
+        label = `Đo góc #${i + 1}`;
+        val = `${m.angleDeg.toFixed(1)}°`;
+      }
+      return `<div class="history-item">
+        <span><b>#${i + 1}</b> • ${label}</span>
+        <strong>${val}</strong>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('btnOpenHistory').addEventListener('click', () => {
+    renderHistorySheet();
+    document.getElementById('sheetHistory').classList.add('open');
+  });
+  document.getElementById('btnCloseHistory').addEventListener('click', () => {
+    document.getElementById('sheetHistory').classList.remove('open');
+  });
+
+  document.getElementById('btnCopyReport').addEventListener('click', () => {
+    if (!measurements.length) {
+      showToast('⚠️ Chưa có số liệu để copy!');
+      return;
+    }
+    const lines = [
+      `📏 BÁO CÁO ĐO KÍCH THƯỚC CAMERA (${new Date().toLocaleString('vi-VN')})`,
+      `• Vật chuẩn tham chiếu: ${refName} (${refMM} mm)`,
+      ...measurements.map((m, i) => {
+        if (m.type === 'length') return `  ${i + 1}. ${m.customNote || 'Chiều dài'}: ${formatLength(m.valueMM)}`;
+        if (m.type === 'area') return `  ${i + 1}. Diện tích: ${formatArea(m.areaMM2)}`;
+        return `  ${i + 1}. Góc nghiêng: ${m.angleDeg.toFixed(1)}°`;
+      })
+    ];
+    navigator.clipboard.writeText(lines.join('\n')).then(() => {
+      showToast('📋 Đã copy báo cáo số liệu vào Clipboard!');
+    });
+  });
+
+  // Mở Sheet GitHub
+  document.getElementById('btnOpenGithub').addEventListener('click', () => {
+    document.getElementById('sheetGithub').classList.add('open');
+  });
+  document.getElementById('btnCloseGithub').addEventListener('click', () => {
+    document.getElementById('sheetGithub').classList.remove('open');
+  });
+
+  // Đóng Coach
+  document.getElementById('btnHideCoach').addEventListener('click', () => {
+    document.getElementById('coachBox').style.display = 'none';
+  });
+
+  // Phóng to toàn màn hình trên máy tính
+  document.getElementById('btnToggleFrame').addEventListener('click', () => {
+    document.getElementById('phoneFrame').classList.toggle('fullscreen-desktop');
+    setTimeout(resizeCanvases, 50);
+  });
+
+  /* ==============================================================
+     10. KHỞI ĐỘNG ỨNG DỤNG
+     ============================================================== */
+  requestAnimationFrame(() => {
+    resizeCanvases();
+    startLiveCamera();
+  });
+})();
+</script>
+</body>
+</html>

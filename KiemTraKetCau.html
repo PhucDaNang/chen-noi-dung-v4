@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng kiểm tra Kết cấu - Quản lý Lỗ mở Sàn</title>
+    <!-- Tải Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        th, td { padding: 10px 12px; text-align: left; border: 1px solid #e0e0e0; }
+        th { background-color: #f4f5f7; text-align: center; }
+        input[type="text"], input[type="number"], select { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; transition: border-color 0.2s, box-shadow 0.2s; }
+        input[type="text"]:focus, input[type="number"]:focus, select:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3); }
+        .table-input { width: 100%; min-width: 70px; padding: 4px 8px; border: 1px solid #d1d5db; border-radius: 4px; }
+        .table-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 1px #3b82f6; outline: none; }
+        .btn { padding: 10px 16px; border-radius: 6px; font-weight: 500; cursor: pointer; transition: background-color 0.2s, box-shadow 0.2s; color: white; }
+        .btn-blue { background-color: #3b82f6; }
+        .btn-blue:hover { background-color: #2563eb; }
+        .btn-green { background-color: #10b981; }
+        .btn-green:hover { background-color: #059669; }
+        .btn-red { background-color: #ef4444; }
+        .btn-red:hover { background-color: #dc2626; }
+        .btn-cyan { background-color: #06b6d4; }
+        .btn-cyan:hover { background-color: #0891b2; }
+        .span-f, .span-so-sanh, .span-f-allow, .span-danhgia { display: block; text-align: center; }
+        
+        /* Style cho ô thủng */
+        .panel-box { cursor: pointer; border: 1px solid #cbd5e1; transition: all 0.2s; }
+        .panel-box:hover { background-color: #f1f5f9; }
+        .panel-box.is-hole { background-color: #fee2e2; border-color: #ef4444; color: #b91c1c; }
+        .panel-box.is-hole::after { content: ' (THỦNG)'; font-size: 0.7rem; font-weight: bold; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 p-4 md:p-8">
+
+    <div class="max-w-screen-xl mx-auto mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="border-b border-gray-300 flex-grow">
+            <nav class="-mb-px flex space-x-8 overflow-x-auto" aria-label="Tabs">
+                <button id="btn-tab-cot" onclick="switchTab('cot')" class="border-blue-500 text-blue-600 whitespace-nowrap py-4 px-1 border-b-2 font-bold text-lg cursor-pointer">
+                    Kiểm tra Cột
+                </button>
+                <button id="btn-tab-dam" onclick="switchTab('dam')" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-bold text-lg cursor-pointer">
+                    Kiểm tra Dầm
+                </button>
+                <button id="btn-tab-san" onclick="switchTab('san')" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-bold text-lg cursor-pointer">
+                    Kiểm tra Sàn (2 phương)
+                </button>
+            </nav>
+        </div>
+        <button id="btnExportAllWord" class="btn bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 shadow-md whitespace-nowrap">
+            <span class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                Xuất Báo Cáo Tổng Hợp (.doc)
+            </span>
+        </button>
+    </div>
+
+    <!-- TAB KIỂM TRA CỘT -->
+    <div id="tab-cot" class="block max-w-screen-xl mx-auto bg-white p-6 md:p-8 rounded-lg shadow-lg">
+        <h1 class="text-2xl font-bold mb-6 text-gray-900" id="bang-tieu-de-cot">C.2 Kết quả kiểm tra độ thẳng đứng cột ngôi nhà</h1>
+        <div id="generator-container-cot" class="mb-6 p-6 border border-gray-200 rounded-lg bg-gray-50">
+            <h2 class="text-lg font-semibold mb-4 text-gray-800">1. Thông số đầu vào chung</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Trục X</label>
+                    <input type="text" id="truc-x-cot" value="1 2 3 4 5 6 7">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Trục Y</label>
+                    <input type="text" id="truc-y-cot" value="A B">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Danh sách tầng</label>
+                    <input type="text" id="tang-cot" value="1 2 3">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-blue-700 mb-1 font-bold">Số lượng/Tầng</label>
+                    <input type="number" id="num-per-floor" value="3" min="1" class="border-blue-300 bg-blue-50">
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">KC Trục X (mm)</label>
+                    <input type="text" id="kc-x-cot" value="3300 3600 3000 3900 3300 3000" class="table-input">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">KC Trục Y (mm)</label>
+                    <input type="text" id="kc-y-cot" value="5000" class="table-input">
+                </div>
+            </div>
+            <div class="mt-6 text-right">
+                <button id="btnGenerateList-cot" class="btn btn-blue">Tạo Danh Sách Cột Ngẫu Nhiên</button>
+            </div>
+        </div>
+        <div class="mb-4 flex flex-wrap gap-4">
+             <button id="btnRandomAllDat-cot" class="btn btn-green">Random Đạt</button>
+             <button id="btnRandomAllKhongDat-cot" class="btn btn-red">Random Không Đạt</button>
+             <button id="btnExportWord-cot" class="btn btn-cyan">Xuất Word</button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-white border border-gray-300" id="bang-ket-qua-cot">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th>STT</th><th>Vị trí</th><th>Hướng lệch</th><th>H(mm)</th><th>a(mm)</th><th>I(%)</th><th>Đánh giá</th><th class="col-xoa">Xóa</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body-cot"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TAB KIỂM TRA DẦM -->
+    <div id="tab-dam" class="hidden max-w-screen-xl mx-auto bg-white p-6 md:p-8 rounded-lg shadow-lg">
+        <h1 class="text-2xl font-bold mb-6 text-gray-900" id="bang-tieu-de-dam">C.4 Kết quả kiểm tra độ võng dầm</h1>
+        <div id="generator-container-dam" class="mb-6 p-6 border border-gray-200 rounded-lg bg-gray-50">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Giá trị H Gốc Dầm (mm)</label>
+                    <input type="number" id="h-goc-dam" value="2640" class="table-input">
+                </div>
+            </div>
+            <div class="mt-6 text-right">
+                <button id="btnGenerateList-dam" class="btn btn-blue">Tạo Danh Sách Dầm Ngẫu Nhiên</button>
+            </div>
+        </div>
+        <div class="mb-4 flex flex-wrap gap-4">
+             <button id="btnRandomAllDat-dam" class="btn btn-green">Random Đạt</button>
+             <button id="btnRandomAllKhongDat-dam" class="btn btn-red">Random Không Đạt</button>
+             <button id="btnExportWord-dam" class="btn btn-cyan">Xuất Word</button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-white border border-gray-300" id="bang-ket-qua-dam">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th>STT</th><th>Vị trí</th><th>H1</th><th>H2</th><th>H3</th><th>L</th><th>F</th><th>SS</th><th>f</th><th>Đánh giá</th><th class="col-xoa">Xóa</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body-dam"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TAB KIỂM TRA SÀN -->
+    <div id="tab-san" class="hidden max-w-screen-xl mx-auto bg-white p-6 md:p-8 rounded-lg shadow-lg">
+        <h1 class="text-2xl font-bold mb-6 text-gray-900" id="bang-tieu-de-san">C.5 Kết quả kiểm tra độ võng sàn (2 phương)</h1>
+        
+        <!-- START CHANGE: Hole Management Section -->
+        <div id="hole-manager" class="mb-6 p-6 border border-blue-200 rounded-lg bg-blue-50">
+            <h2 class="text-lg font-semibold mb-2 text-blue-900">1. Quản lý ô thủng (Lỗ mở)</h2>
+            <p class="text-sm text-blue-700 mb-4">Click vào các ô dưới đây để đánh dấu ô thủng. Các ô này sẽ không được chọn khi bốc thăm ngẫu nhiên.</p>
+            <div id="hole-grid" class="flex flex-wrap gap-2 mb-4">
+                <!-- Grid will be generated here -->
+            </div>
+            <div class="text-right">
+                <button id="btnRefreshHoleGrid" class="text-sm text-blue-600 font-bold underline">Cập nhật lưới ô sàn từ Trục X/Y</button>
+            </div>
+        </div>
+        <!-- END CHANGE -->
+
+        <div id="generator-container-san" class="mb-6 p-6 border border-gray-200 rounded-lg bg-gray-50">
+            <h2 class="text-lg font-semibold mb-4 text-gray-800">2. Tạo Danh Sách Ngẫu Nhiên</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Giá trị H Gốc Sàn (mm)</label>
+                    <input type="number" id="h-goc-san" value="2800" class="table-input">
+                </div>
+            </div>
+            <div class="mt-6 text-right">
+                <button id="btnGenerateList-san" class="btn btn-blue">Tạo Danh Sách Ô Sàn Ngẫu Nhiên</button>
+            </div>
+        </div>
+        <div class="mb-4 flex flex-wrap gap-4">
+             <button id="btnRandomAllDat-san" class="btn btn-green">Random Đạt</button>
+             <button id="btnRandomAllKhongDat-san" class="btn btn-red">Random Không Đạt</button>
+             <button id="btnExportWord-san" class="btn btn-cyan">Xuất Word</button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full bg-white border border-gray-300" id="bang-ket-qua-san">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th>STT</th><th>Vị trí ô bản</th><th>H1</th><th>H2</th><th>H3</th><th>L</th><th>F</th><th>SS</th><th>f</th><th>Đánh giá</th><th class="col-xoa">Xóa</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body-san"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            ['cot', 'dam', 'san'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== tab);
+                const btn = document.getElementById(`btn-tab-${t}`);
+                btn.className = t === tab 
+                    ? 'border-blue-500 text-blue-600 whitespace-nowrap py-4 px-1 border-b-2 font-bold text-lg cursor-pointer'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-bold text-lg cursor-pointer';
+            });
+            // Nếu chuyển sang tab sàn, tự động refresh lưới lỗ mở nếu trống
+            if (tab === 'san' && document.getElementById('hole-grid').children.length === 0) {
+                generateHoleGrid();
+            }
+        }
+
+        function updateSTT(tbody) {
+            Array.from(tbody.rows).forEach((row, i) => row.cells[0].textContent = i + 1);
+        }
+
+        function getDim(arr, idx) {
+            if (arr.length === 0) return 3000;
+            return arr[idx] || arr[arr.length - 1] || 3000;
+        }
+
+        function getRealisticDeltas() {
+            let d1 = Math.floor(Math.random() * 11);
+            let d3 = Math.floor(Math.random() * 11);
+            while(d1 === d3) d3 = Math.floor(Math.random() * 11);
+            return {d1, d3};
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // --- Logic Tab Cột ---
+        (function() {
+            const tbody = document.getElementById('table-body-cot');
+            document.getElementById('btnGenerateList-cot').onclick = () => {
+                const tx = document.getElementById('truc-x-cot').value.trim().split(/\s+/);
+                const ty = document.getElementById('truc-y-cot').value.trim().split(/\s+/);
+                const floors = document.getElementById('tang-cot').value.trim().split(/\s+/);
+                const numPerFloor = parseInt(document.getElementById('num-per-floor').value) || 3;
+                tbody.innerHTML = '';
+                floors.forEach(tang => {
+                    let pool = [];
+                    tx.forEach(x => ty.forEach(y => pool.push({x, y})));
+                    shuffle(pool).slice(0, numPerFloor).forEach(c => {
+                        const row = tbody.insertRow();
+                        row.innerHTML = `<td></td><td>Cột tầng ${tang} trục ${c.y}/${c.x}</td><td>${Math.random()>0.5?'Ngang':'Dọc'} nhà</td>
+                            <td><input type="number" class="table-input input-h" value="3000"></td>
+                            <td><input type="number" class="table-input input-a" value="${Math.floor(Math.random()*15)}"></td>
+                            <td class="span-i"></td><td class="span-danhgia"></td>
+                            <td class="col-xoa text-center"><button class="text-red-500" onclick="this.closest('tr').remove(); updateSTT(document.getElementById('table-body-cot'))">Xóa</button></td>`;
+                        row.querySelectorAll('input').forEach(inp => inp.oninput = () => calcRow(row));
+                        calcRow(row);
+                    });
+                });
+                updateSTT(tbody);
+            };
+            function calcRow(row) {
+                const h = parseFloat(row.querySelector('.input-h').value) || 3000, a = parseFloat(row.querySelector('.input-a').value) || 0;
+                const i = (a * 100 / h).toFixed(2);
+                row.querySelector('.span-i').textContent = i + '%';
+                const dat = i <= 1;
+                row.querySelector('.span-danhgia').textContent = dat ? 'Đạt' : 'Không Đạt';
+                row.querySelector('.span-danhgia').className = 'span-danhgia font-medium ' + (dat ? 'text-green-600' : 'text-red-600');
+            }
+            document.getElementById('btnRandomAllDat-cot').onclick = () => Array.from(tbody.rows).forEach(r => { r.querySelector('.input-a').value = Math.floor(Math.random()*18); calcRow(r); });
+            document.getElementById('btnRandomAllKhongDat-cot').onclick = () => Array.from(tbody.rows).forEach(r => { r.querySelector('.input-a').value = Math.floor(Math.random()*30+35); calcRow(r); });
+        })();
+
+        // --- Logic Tab Dầm ---
+        (function() {
+            const tbody = document.getElementById('table-body-dam');
+            const hGocInp = document.getElementById('h-goc-dam');
+            document.getElementById('btnGenerateList-dam').onclick = () => {
+                const tx = document.getElementById('truc-x-cot').value.trim().split(/\s+/), ty = document.getElementById('truc-y-cot').value.trim().split(/\s+/), floors = document.getElementById('tang-cot').value.trim().split(/\s+/);
+                const kcX = document.getElementById('kc-x-cot').value.trim().split(/\s+/).map(Number), kcY = document.getElementById('kc-y-cot').value.trim().split(/\s+/).map(Number), numPerFloor = parseInt(document.getElementById('num-per-floor').value) || 3;
+                tbody.innerHTML = '';
+                floors.forEach((tang, idx) => {
+                    const tangKe = floors[idx+1] || "mái";
+                    let pool = [];
+                    for (let k = 0; k < ty.length; k++) for (let i = 0; i < tx.length-1; i++) pool.push({ name: `Dầm tầng ${tangKe} trục ${ty[k]}/(${tx[i]}-${tx[i+1]})`, l: getDim(kcX, i) });
+                    for (let m = 0; m < tx.length; m++) for (let j = 0; j < ty.length-1; j++) pool.push({ name: `Dầm tầng ${tangKe} trục ${tx[m]}/(${ty[j]}-${ty[j+1]})`, l: getDim(kcY, j) });
+                    shuffle(pool).slice(0, numPerFloor).forEach(b => addVongRow(tbody, b.name, b.l, Number(hGocInp.value)));
+                });
+                updateSTT(tbody);
+            };
+            document.getElementById('btnRandomAllDat-dam').onclick = () => randomAllVong(tbody, hGocInp.value, true);
+            document.getElementById('btnRandomAllKhongDat-dam').onclick = () => randomAllVong(tbody, hGocInp.value, false);
+        })();
+
+        // --- Logic Tab Sàn ---
+        (function() {
+            const tbody = document.getElementById('table-body-san');
+            const hGocInp = document.getElementById('h-goc-san');
+            const btnRefreshHole = document.getElementById('btnRefreshHoleGrid');
+
+            btnRefreshHole.onclick = generateHoleGrid;
+
+            document.getElementById('btnGenerateList-san').onclick = () => {
+                const tx = document.getElementById('truc-x-cot').value.trim().split(/\s+/), ty = document.getElementById('truc-y-cot').value.trim().split(/\s+/), floors = document.getElementById('tang-cot').value.trim().split(/\s+/);
+                const kcX = document.getElementById('kc-x-cot').value.trim().split(/\s+/).map(Number), kcY = document.getElementById('kc-y-cot').value.trim().split(/\s+/).map(Number), numPerFloor = parseInt(document.getElementById('num-per-floor').value) || 3;
+                const holes = Array.from(document.querySelectorAll('.panel-box.is-hole')).map(el => el.dataset.panel);
+                
+                tbody.innerHTML = '';
+                floors.forEach((tang, idx) => {
+                    const tangKe = floors[idx+1] || "mái";
+                    let pool = [];
+                    for (let i = 0; i < tx.length-1; i++) {
+                        for (let j = 0; j < ty.length-1; j++) {
+                            const panelId = `(${tx[i]}-${tx[i+1]})/(${ty[j]}-${ty[j+1]})`;
+                            if (!holes.includes(panelId)) {
+                                pool.push({ panel: `Sàn tầng ${tangKe} ô trục ${panelId}`, lX: getDim(kcX, i), lY: getDim(kcY, j) });
+                            }
+                        }
+                    }
+                    shuffle(pool).slice(0, numPerFloor).forEach(p => {
+                        addVongRow(tbody, `${p.panel} [Phương X]`, p.lX, Number(hGocInp.value));
+                        addVongRow(tbody, `${p.panel} [Phương Y]`, p.lY, Number(hGocInp.value));
+                    });
+                });
+                updateSTT(tbody);
+            };
+            document.getElementById('btnRandomAllDat-san').onclick = () => randomAllVong(tbody, hGocInp.value, true);
+            document.getElementById('btnRandomAllKhongDat-san').onclick = () => randomAllVong(tbody, hGocInp.value, false);
+        })();
+
+        // Hàm tạo lưới lỗ mở
+        function generateHoleGrid() {
+            const tx = document.getElementById('truc-x-cot').value.trim().split(/\s+/);
+            const ty = document.getElementById('truc-y-cot').value.trim().split(/\s+/);
+            const grid = document.getElementById('hole-grid');
+            grid.innerHTML = '';
+            for (let i = 0; i < tx.length-1; i++) {
+                for (let j = 0; j < ty.length-1; j++) {
+                    const panelId = `(${tx[i]}-${tx[i+1]})/(${ty[j]}-${ty[j+1]})`;
+                    const box = document.createElement('div');
+                    box.className = 'panel-box p-2 text-xs rounded bg-white shadow-sm';
+                    box.textContent = panelId;
+                    box.dataset.panel = panelId;
+                    box.onclick = () => box.classList.toggle('is-hole');
+                    grid.appendChild(box);
+                }
+            }
+        }
+
+        // Helper dùng chung
+        function addVongRow(tbody, name, length, hGoc) {
+            const deltas = getRealisticDeltas();
+            const row = tbody.insertRow();
+            row.innerHTML = `<td></td><td>${name}</td>
+                <td><input type="number" class="table-input input-h1" value="${hGoc + deltas.d1}"></td>
+                <td><input type="number" class="table-input input-h2" value="${hGoc}"></td>
+                <td><input type="number" class="table-input input-h3" value="${hGoc + deltas.d3}"></td>
+                <td><input type="number" class="table-input input-l" value="${length}"></td>
+                <td class="span-f"></td><td class="span-so-sanh"></td><td class="span-f-allow"></td><td class="span-danhgia"></td>
+                <td class="col-xoa text-center"><button class="text-red-500" onclick="this.closest('tr').remove(); updateSTT(this.closest('tbody'))">Xóa</button></td>`;
+            row.querySelectorAll('input').forEach(inp => inp.oninput = () => calcVongRow(row));
+            calcVongRow(row);
+        }
+
+        function calcVongRow(row) {
+            const h1 = Number(row.querySelector('.input-h1').value), h2 = Number(row.querySelector('.input-h2').value), 
+                  h3 = Number(row.querySelector('.input-h3').value), l = Number(row.querySelector('.input-l').value);
+            const F = Math.abs(h2 - (h1 + h3) / 2), f_allow = l / 200;
+            const dat = F <= f_allow;
+            row.querySelector('.span-f').textContent = F.toFixed(1);
+            row.querySelector('.span-so-sanh').textContent = dat ? '<' : '>';
+            row.querySelector('.span-f-allow').textContent = f_allow.toFixed(1);
+            row.querySelector('.span-danhgia').textContent = dat ? 'Trong tiêu chuẩn' : 'Ngoài tiêu chuẩn';
+            row.querySelector('.span-danhgia').className = 'span-danhgia font-medium ' + (dat ? 'text-green-600' : 'text-red-600');
+        }
+
+        function randomAllVong(tbody, hGoc, isDat) {
+            const hBase = Number(hGoc);
+            Array.from(tbody.rows).forEach(r => {
+                const l = Number(r.querySelector('.input-l').value);
+                const f_allow = l / 200;
+                let d1, d3;
+                if (isDat) {
+                    const deltas = getRealisticDeltas();
+                    d1 = deltas.d1; d3 = deltas.d3;
+                } else {
+                    d1 = Math.floor(f_allow + Math.random() * 10 + 5);
+                    d3 = Math.floor(f_allow + Math.random() * 10 + 7);
+                    if (d1 === d3) d3 += 2;
+                }
+                r.querySelector('.input-h2').value = hBase;
+                r.querySelector('.input-h1').value = hBase + d1;
+                r.querySelector('.input-h3').value = hBase + d3;
+                calcVongRow(r);
+            });
+        }
+
+        function getTableHtmlForExport(tableId, titleId) {
+            const table = document.getElementById(tableId).cloneNode(true);
+            const title = document.getElementById(titleId).innerText;
+            
+            // Xóa cột "Xóa" và các nút bấm
+            table.querySelectorAll('.col-xoa, button').forEach(el => el.remove());
+            
+            // Chuyển đổi input thành text
+            table.querySelectorAll('input').forEach(inp => {
+                const val = inp.value || "";
+                const span = document.createElement('span');
+                span.textContent = val;
+                inp.replaceWith(span);
+            });
+
+            return `<h2 style='text-align:center; font-family: Arial; color: #333; margin-top: 30px;'>${title}</h2>` + table.outerHTML;
+        }
+
+        function exportFullReport() {
+            const configs = [
+                { id: 'bang-ket-qua-cot', titleId: 'bang-tieu-de-cot' },
+                { id: 'bang-ket-qua-dam', titleId: 'bang-tieu-de-dam' },
+                { id: 'bang-ket-qua-san', titleId: 'bang-tieu-de-san' }
+            ];
+
+            let combinedContent = "";
+            configs.forEach((cfg, index) => {
+                const tableHtml = getTableHtmlForExport(cfg.id, cfg.titleId);
+                combinedContent += tableHtml;
+                if (index < configs.length - 1) {
+                    combinedContent += "<br clear=all style='mso-special-character:line-break;page-break-before:always'>";
+                }
+            });
+
+            const html = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                <head>
+                    <meta charset='utf-8'>
+                    <!--[if gte mso 9]>
+                    <xml>
+                        <w:WordDocument>
+                            <w:View>Print</w:View>
+                            <w:Zoom>100</w:Zoom>
+                            <w:DoNotOptimizeForBrowser/>
+                        </w:WordDocument>
+                    </xml>
+                    <![endif]-->
+                    <style>
+                        @page {
+                            size: A4;
+                            margin: 2cm 2cm 2cm 2.5cm; /* Lề chuẩn: Trên 2, Dưới 2, Phải 2, Trái 2.5 */
+                        }
+                        body { 
+                            font-family: "Times New Roman", Times, serif; 
+                            font-size: 13pt; 
+                            line-height: 1.3;
+                        }
+                        h1 { font-size: 16pt; text-align: center; color: #000; font-weight: bold; margin-bottom: 20px; text-transform: uppercase; }
+                        h2 { font-size: 14pt; text-align: center; color: #000; font-weight: bold; margin-top: 30px; margin-bottom: 15px; }
+                        table { border-collapse: collapse; width: 100%; border: 0.5pt solid black; mso-table-lspace:0pt; mso-table-rspace:0pt; }
+                        th, td { 
+                            border: 0.5pt solid black; 
+                            padding: 5pt; 
+                            text-align: center; 
+                            font-family: "Times New Roman", Times, serif; 
+                            font-size: 13pt; 
+                        }
+                        th { background-color: #E7E6E6; font-weight: bold; }
+                        .text-green-600 { color: #000; font-weight: bold; } /* Trong Word in ấn thường để đen trắng hoặc đậm */
+                        .text-red-600 { color: #FF0000; font-weight: bold; }
+                        span { font-family: "Times New Roman", Times, serif; font-size: 13pt; }
+                    </style>
+                </head>
+                <body>
+                    <h1>BÁO CÁO TỔNG HỢP KIỂM TRA KẾT CẤU</h1>
+                    ${combinedContent}
+                    <div style="margin-top: 50px; text-align: right;">
+                        <p><i>Ngày .... tháng .... năm 20...</i></p>
+                        <p style="font-weight: bold; margin-right: 50px;">Người kiểm tra</p>
+                        <br><br><br>
+                        <p style="font-weight: bold; margin-right: 40px;">(Ký và ghi rõ họ tên)</p>
+                    </div>
+                </body>
+                </html>`;
+
+            const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'Bao_Cao_Ket_Cau_Tong_Hop.doc';
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        document.getElementById('btnExportAllWord').onclick = exportFullReport;
+        document.getElementById('btnExportWord-cot').onclick = exportFullReport;
+        document.getElementById('btnExportWord-dam').onclick = exportFullReport;
+        document.getElementById('btnExportWord-san').onclick = exportFullReport;
+    </script>
+</body>
+</html>
